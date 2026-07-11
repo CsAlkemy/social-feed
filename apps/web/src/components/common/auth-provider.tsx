@@ -6,7 +6,12 @@ import { Spinner } from "@repo/ui";
 import { useSession } from "@/hooks/use-auth";
 
 function isProtectedRoute(pathname: string): boolean {
-  return pathname === "/feed" || pathname.startsWith("/feed/");
+  return (
+    pathname === "/feed" ||
+    pathname.startsWith("/feed/") ||
+    pathname === "/profile" ||
+    pathname.startsWith("/profile/")
+  );
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

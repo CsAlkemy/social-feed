@@ -18,6 +18,7 @@ export * from "./schadcn/textarea";
 export * from "./common/common-button";
 export * from "./common/common-checkbox";
 export * from "./common/common-dropdown";
+export * from "./common/common-image-upload";
 export * from "./common/common-input";
 export * from "./common/common-modal";
 export * from "./common/common-radio";

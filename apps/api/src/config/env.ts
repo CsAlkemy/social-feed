@@ -12,6 +12,7 @@ const envSchema = z.object({
     .min(16, "JWT_ACCESS_SECRET must be at least 16 characters"),
   JWT_ACCESS_TTL_SECONDS: z.coerce.number().default(900),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().default(7),
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

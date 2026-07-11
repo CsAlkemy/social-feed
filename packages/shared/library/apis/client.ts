@@ -20,6 +20,10 @@ export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
 export function apiUrl(apiModule: string, lastUrl?: string): string {
   const path = [apiModule, lastUrl].filter(Boolean).join("/");
   return `${config.baseUrl.replace(/\/+$/, "")}/${path}`;

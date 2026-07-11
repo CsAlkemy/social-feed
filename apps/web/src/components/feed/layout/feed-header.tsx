@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useState, type ReactNode } from "react";
 
 import {
@@ -54,14 +55,15 @@ function NavIconButton({ label, icon, badgeCount, className }: NavIconButtonProp
 }
 
 export function FeedHeader({ user }: { user: User }) {
+  const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
   const logout = useLogout();
   const fullName = `${user.firstName} ${user.lastName}`;
 
   const accountMenuItems: CommonDropdownItem[] = [
-    { label: "View profile", onSelect: () => toast.info("View profile is not connected yet") },
-    { label: "Settings", onSelect: () => toast.info("Settings is not connected yet") },
-    { label: "Help & Support", onSelect: () => toast.info("Help & Support is not connected yet") },
+    { label: "View profile", onSelect: () => void router.push("/profile") },
+    { label: "Settings", disabled: true },
+    { label: "Help & Support", disabled: true },
     { type: "separator" },
     {
       label: "Log out",

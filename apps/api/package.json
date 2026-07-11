@@ -19,6 +19,7 @@
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@repo/library": "workspace:*",
+    "@vercel/blob": "^2.6.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "reflect-metadata": "^0.2.2",

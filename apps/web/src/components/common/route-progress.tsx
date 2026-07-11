@@ -7,9 +7,6 @@ type RouteChangeOptions = { shallow?: boolean };
 export function RouteProgress() {
   useEffect(() => {
     NProgress.configure({ showSpinner: false, trickleSpeed: 120 });
-
-    // Shallow route changes (query-only updates for tabs/filters) complete synchronously
-    // and would just flash the bar, so they are skipped.
     const handleStart = (_url: string, options?: RouteChangeOptions) => {
       if (!options?.shallow) {
         NProgress.start();

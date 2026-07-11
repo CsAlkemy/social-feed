@@ -1,9 +1,9 @@
 import type { AppProps } from "next/app";
 import { Poppins } from "next/font/google";
 
-import { Toaster } from "@repo/ui/schadcn/sonner";
+import { Toaster } from "@repo/ui";
 
-import { RouteProgress } from "@/components/route-progress";
+import { RouteProgress } from "@/components/common/route-progress";
 
 import "nprogress/nprogress.css";
 import "@/styles/globals.css";

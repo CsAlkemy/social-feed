@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { LoginView } from "@/components/auth/login";
 
 export default function LoginPage() {
   return (
@@ -6,9 +7,7 @@ export default function LoginPage() {
       <Head>
         <title>Login | Appifylab Social</title>
       </Head>
-      <main className="flex min-h-screen items-center justify-center bg-gray-50">
-        <p className="text-gray-500">Login page — to be implemented.</p>
-      </main>
+      <LoginView />
     </>
   );
 }

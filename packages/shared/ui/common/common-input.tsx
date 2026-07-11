@@ -67,7 +67,6 @@ export function CommonInput<TFieldValues extends FieldValues>({
         {isPassword ? (
           <button
             type="button"
-            tabIndex={-1}
             onClick={() => setShowPassword((previous) => !previous)}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
             aria-label={showPassword ? "Hide password" : "Show password"}

@@ -14,18 +14,19 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist && tsc",
     "dev": "tsc --watch --preserveWatchOutput",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit"
   },
-  "dependencies": {
+  "peerDependencies": {
     "zod": "^4.0.0"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "eslint": "^9.25.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "zod": "^4.0.0"
   }
 }

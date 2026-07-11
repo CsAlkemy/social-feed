@@ -18,6 +18,11 @@
       "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
+    },
+    "@repo/library#dev": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": true
     }
   }
 }

@@ -39,6 +39,8 @@ bun run dev
 | Command               | Description                       |
 | --------------------- | --------------------------------- |
 | `bun run dev`         | Run all apps in watch mode        |
+| `bun run dev:web`     | Run web + its dependencies only   |
+| `bun run dev:api`     | Run api + its dependencies only   |
 | `bun run build`       | Build all apps and packages       |
 | `bun run lint`        | Lint all workspaces               |
 | `bun run check-types` | Type-check all workspaces         |

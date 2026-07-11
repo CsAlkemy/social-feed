@@ -4,11 +4,12 @@ import type { User } from "./user";
 export interface Post {
   id: string;
   content: string;
-  imageUrl: string | null;
+  imageUrls: string[];
   visibility: PostVisibility;
   author: User;
   likeCount: number;
   commentCount: number;
+  shareCount: number;
   likedByViewer: boolean;
   createdAt: string;
 }

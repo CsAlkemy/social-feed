@@ -1,8 +1,10 @@
 import Head from "next/head";
 
+import { AppLayout } from "@/components/common/app-layout";
 import { ProfileComponent } from "@/components/profile";
+import type { NextPageWithLayout } from "@/pages/_app";
 
-export default function ProfilePage() {
+const ProfilePage: NextPageWithLayout = () => {
   return (
     <>
       <Head>
@@ -11,4 +13,8 @@ export default function ProfilePage() {
       <ProfileComponent />
     </>
   );
-}
+};
+
+ProfilePage.getLayout = (page) => <AppLayout>{page}</AppLayout>;
+
+export default ProfilePage;

@@ -1,8 +1,10 @@
 import Head from "next/head";
 
+import { AppLayout } from "@/components/common/app-layout";
 import { FeedView } from "@/components/feed/feed-view";
+import type { NextPageWithLayout } from "@/pages/_app";
 
-export default function FeedPage() {
+const FeedPage: NextPageWithLayout = () => {
   return (
     <>
       <Head>
@@ -11,4 +13,8 @@ export default function FeedPage() {
       <FeedView />
     </>
   );
-}
+};
+
+FeedPage.getLayout = (page) => <AppLayout fullHeight>{page}</AppLayout>;
+
+export default FeedPage;

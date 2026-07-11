@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, type ReactElement, type ReactNode } from "react";
 
+import type { NextPage } from "next";
 import type { AppProps } from "next/app";
 import { Poppins } from "next/font/google";
 
@@ -22,7 +23,17 @@ const poppins = Poppins({
   variable: "--font-poppins",
 });
 
-export default function App({ Component, pageProps }: AppProps) {
+export type NextPageWithLayout<P = object> = NextPage<P> & {
+  getLayout?: (page: ReactElement) => ReactNode;
+};
+
+type AppPropsWithLayout = AppProps & {
+  Component: NextPageWithLayout;
+};
+
+export default function App({ Component, pageProps }: AppPropsWithLayout) {
+  const getLayout = Component.getLayout ?? ((page) => page);
+
   const [queryClient] = useState(() => {
     const client = new QueryClient({
       defaultOptions: {
@@ -56,9 +67,7 @@ export default function App({ Component, pageProps }: AppProps) {
         }
       `}</style>
       <RouteProgress />
-      <AuthProvider>
-        <Component {...pageProps} />
-      </AuthProvider>
+      <AuthProvider>{getLayout(<Component {...pageProps} />)}</AuthProvider>
       <Toaster />
     </QueryClientProvider>
   );

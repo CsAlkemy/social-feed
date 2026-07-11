@@ -54,14 +54,14 @@ function NavIconButton({ label, icon, badgeCount, className }: NavIconButtonProp
   );
 }
 
-export function FeedHeader({ user }: { user: User }) {
+export function AppHeader({ user }: { user: User }) {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
   const logout = useLogout();
   const fullName = `${user.firstName} ${user.lastName}`;
 
   const accountMenuItems: CommonDropdownItem[] = [
-    { label: "View profile", onSelect: () => void router.push("/profile") },
+    { label: "View profile", onSelect: () => router.push("/profile") },
     { label: "Settings", disabled: true },
     { label: "Help & Support", disabled: true },
     { type: "separator" },
@@ -118,8 +118,16 @@ export function FeedHeader({ user }: { user: User }) {
             <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-full bg-primary" />
           </Link>
           <NavIconButton label="Friends" icon={<UsersIcon className="size-5" />} />
-          <NavIconButton label="Notifications" icon={<BellIcon className="size-5" />} badgeCount={6} />
-          <NavIconButton label="Messages" icon={<MessageCircleIcon className="size-5" />} badgeCount={2} />
+          <NavIconButton
+            label="Notifications"
+            icon={<BellIcon className="size-5" />}
+            badgeCount={6}
+          />
+          <NavIconButton
+            label="Messages"
+            icon={<MessageCircleIcon className="size-5" />}
+            badgeCount={2}
+          />
         </nav>
 
         <CommonDropdown

@@ -1,2 +1,3 @@
+export * from "./api-error";
 export * from "./format-date";
 export * from "./get-initials";

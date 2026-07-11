@@ -1,26 +1,39 @@
+import { useRouter } from "next/router";
+
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useForm } from "react-hook-form";
 
-import { loginFormSchema, type LoginFormInput } from "@repo/library";
+import {
+  loginFormSchema,
+  type LoginFormInput,
+  type LoginInput,
+} from "@repo/library";
+import { setAccessToken, useApiMutation } from "@repo/library/apis";
 import { CommonButton, CommonCheckbox, CommonInput, toast } from "@repo/ui";
 
 import { AuthLayout } from "@/components/auth/layout/auth-layout";
+import { setAuthHint, type AuthResponse } from "@/lib/auth";
 
 export function LoginView() {
-  const {
-    control,
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm<LoginFormInput>({
+  const router = useRouter();
+
+  const { control, handleSubmit } = useForm<LoginFormInput>({
     resolver: standardSchemaResolver(loginFormSchema),
     defaultValues: { email: "", password: "", rememberMe: true },
   });
 
-  const onSubmit = handleSubmit(() => {
-    toast.info("Login is not connected yet", {
-      description: "The auth API is the next step.",
-    });
+  const login = useApiMutation<AuthResponse, LoginInput>("auth", "login", "post", {
+    onSuccess: ({ accessToken }) => {
+      setAccessToken(accessToken);
+      setAuthHint(true);
+      void router.push("/feed");
+    },
+    onError: (error) => {
+      toast.error(error.message || "Unable to login right now");
+    },
   });
+
+  const onSubmit = handleSubmit((values) => login.mutate(values));
 
   return (
     <AuthLayout
@@ -52,7 +65,12 @@ export function LoginView() {
           <p className="text-sm font-medium text-primary">Forgot password?</p>
         </div>
 
-        <CommonButton type="submit" size="lg" loading={isSubmitting} className="mt-6 w-full">
+        <CommonButton
+          type="submit"
+          size="lg"
+          loading={login.isLoading || login.isSuccess}
+          className="mt-6 w-full"
+        >
           Login now
         </CommonButton>
       </form>

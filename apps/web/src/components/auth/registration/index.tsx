@@ -1,17 +1,23 @@
+import { useRouter } from "next/router";
+
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useForm } from "react-hook-form";
 
-import { registrationFormSchema, type RegistrationFormInput } from "@repo/library";
+import {
+  registrationFormSchema,
+  type RegistrationFormInput,
+  type RegistrationInput,
+} from "@repo/library";
+import { setAccessToken, useApiMutation } from "@repo/library/apis";
 import { CommonButton, CommonCheckbox, CommonInput, toast } from "@repo/ui";
 
 import { AuthLayout } from "@/components/auth/layout/auth-layout";
+import { setAuthHint, type AuthResponse } from "@/lib/auth";
 
 export function RegistrationComponent() {
-  const {
-    control,
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm<RegistrationFormInput>({
+  const router = useRouter();
+
+  const { control, handleSubmit } = useForm<RegistrationFormInput>({
     resolver: standardSchemaResolver(registrationFormSchema),
     defaultValues: {
       firstName: "",
@@ -23,11 +29,23 @@ export function RegistrationComponent() {
     },
   });
 
-  const onSubmit = handleSubmit(() => {
-    toast.info("Registration is not connected yet", {
-      description: "The auth API is the next step.",
-    });
-  });
+  const register = useApiMutation<AuthResponse, RegistrationInput>(
+    "auth",
+    "register",
+    "post",
+    {
+      onSuccess: ({ accessToken }) => {
+        setAccessToken(accessToken);
+        setAuthHint(true);
+        void router.push("/feed");
+      },
+      onError: (error) => {
+        toast.error(error.message || "Unable to register right now");
+      },
+    },
+  );
+
+  const onSubmit = handleSubmit((values) => register.mutate(values));
 
   return (
     <AuthLayout
@@ -82,7 +100,12 @@ export function RegistrationComponent() {
           containerClassName="mt-1"
         />
 
-        <CommonButton type="submit" size="lg" loading={isSubmitting} className="mt-6 w-full">
+        <CommonButton
+          type="submit"
+          size="lg"
+          loading={register.isLoading || register.isSuccess}
+          className="mt-6 w-full"
+        >
           Register now
         </CommonButton>
       </form>

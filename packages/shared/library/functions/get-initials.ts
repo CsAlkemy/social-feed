@@ -1,6 +1,3 @@
-/**
- * Builds avatar initials from one or more names, e.g. ("Jane", "Doe") -> "JD".
- */
 export function getInitials(...names: Array<string | null | undefined>): string {
   return names
     .filter((name): name is string => Boolean(name && name.trim()))

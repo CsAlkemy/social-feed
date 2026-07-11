@@ -7,6 +7,6 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "include": ["index.ts", "functions", "schema", "enum", "entities"],
+  "include": ["index.ts", "apis", "functions", "schema", "enum", "entities"],
   "exclude": ["node_modules", "dist"]
 }

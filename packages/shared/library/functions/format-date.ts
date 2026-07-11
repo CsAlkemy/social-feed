@@ -10,9 +10,6 @@ const UNITS: Array<{ max: number; divisor: number; unit: Intl.RelativeTimeFormat
 
 const relativeTimeFormat = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
 
-/**
- * Formats a date as a human-readable relative time, e.g. "5 minutes ago".
- */
 export function formatRelativeTime(input: Date | string | number, now: Date = new Date()): string {
   const date = input instanceof Date ? input : new Date(input);
   const seconds = Math.round((date.getTime() - now.getTime()) / 1000);

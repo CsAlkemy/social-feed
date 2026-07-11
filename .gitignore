@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# builds
+.next/
+dist/
+out/
+build/
+
+# turbo
+.turbo/
+
+# typescript
+*.tsbuildinfo
+
+# env
+.env
+.env.*
+!.env.example
+
+# misc
+coverage/
+*.log
+.DS_Store
+
+# provided task assets (kept out of the public repo)
+Selection Task for Full Stack Engineer at Appifylab/

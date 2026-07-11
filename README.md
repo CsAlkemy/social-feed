@@ -9,8 +9,11 @@ apps/
   web/                    # Next.js (Pages Router) + Tailwind CSS
   api/                    # NestJS REST API
 packages/
-  typescript-config/      # Shared tsconfig presets (base, nextjs, nestjs)
-  eslint-config/          # Shared ESLint flat configs (base, next-js, nest-js)
+  shared/
+    library/              # @repo/library — functions, schema (zod), enum, entities
+    ui/                   # @repo/ui — shadcn components (schadcn/), common components (common/)
+  typescript-config/      # Shared tsconfig presets (base, nextjs, nestjs, react-library)
+  eslint-config/          # Shared ESLint flat configs (base, next-js, nest-js, react-internal)
 ```
 
 ## Requirements

@@ -2,14 +2,15 @@ import { useState } from "react";
 
 import type { AppProps } from "next/app";
 import { Poppins } from "next/font/google";
-import Router from "next/router";
 
 import { isApiError } from "@repo/library";
 import { configureApi } from "@repo/library/apis";
 import { Toaster } from "@repo/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+import { AuthProvider } from "@/components/common/auth-provider";
 import { RouteProgress } from "@/components/common/route-progress";
+import { sessionKey } from "@/hooks/use-auth";
 import { setAuthHint } from "@/lib/auth";
 
 import "nprogress/nprogress.css";
@@ -23,18 +24,7 @@ const poppins = Poppins({
 
 export default function App({ Component, pageProps }: AppProps) {
   const [queryClient] = useState(() => {
-    configureApi({
-      baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api",
-      refreshPath: "/auth/refresh",
-      onUnauthorized: () => {
-        setAuthHint(false);
-        if (!Router.pathname.startsWith("/auth")) {
-          void Router.replace("/auth/login");
-        }
-      },
-    });
-
-    return new QueryClient({
+    const client = new QueryClient({
       defaultOptions: {
         queries: {
           staleTime: 30_000,
@@ -45,6 +35,17 @@ export default function App({ Component, pageProps }: AppProps) {
         mutations: { retry: false },
       },
     });
+
+    configureApi({
+      baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api",
+      refreshPath: "/auth/refresh",
+      onUnauthorized: () => {
+        setAuthHint(false);
+        client.setQueryData(sessionKey, null);
+      },
+    });
+
+    return client;
   });
 
   return (
@@ -55,7 +56,9 @@ export default function App({ Component, pageProps }: AppProps) {
         }
       `}</style>
       <RouteProgress />
-      <Component {...pageProps} />
+      <AuthProvider>
+        <Component {...pageProps} />
+      </AuthProvider>
       <Toaster />
     </QueryClientProvider>
   );

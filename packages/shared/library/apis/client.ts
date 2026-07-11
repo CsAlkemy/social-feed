@@ -47,6 +47,13 @@ function refresh(): Promise<boolean> {
   return refreshing;
 }
 
+function isAuthUrl(url: string): boolean {
+  const path = config.refreshPath;
+  if (!path) return false;
+  const prefix = path.replace(/[^/]+$/, "");
+  return prefix ? url.includes(prefix) : url.includes(path);
+}
+
 function messageOf(data: unknown, status: number): string {
   if (data && typeof data === "object" && "message" in data) {
     const { message } = data as { message: unknown };
@@ -73,13 +80,7 @@ export async function apiRequest<T>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
 
-  if (
-    res.status === 401 &&
-    retry &&
-    accessToken &&
-    config.refreshPath &&
-    !url.includes(config.refreshPath)
-  ) {
+  if (res.status === 401 && retry && config.refreshPath && !isAuthUrl(url)) {
     if (await refresh()) return apiRequest<T>(method, url, body, false);
     config.onUnauthorized?.();
   }

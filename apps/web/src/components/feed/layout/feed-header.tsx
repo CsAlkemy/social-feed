@@ -21,6 +21,8 @@ import {
   type CommonDropdownItem,
 } from "@repo/ui";
 
+import { useLogout } from "@/hooks/use-auth";
+
 interface NavIconButtonProps {
   label: string;
   icon: ReactNode;
@@ -53,6 +55,7 @@ function NavIconButton({ label, icon, badgeCount, className }: NavIconButtonProp
 
 export function FeedHeader({ user }: { user: User }) {
   const [searchValue, setSearchValue] = useState("");
+  const logout = useLogout();
   const fullName = `${user.firstName} ${user.lastName}`;
 
   const accountMenuItems: CommonDropdownItem[] = [
@@ -63,7 +66,7 @@ export function FeedHeader({ user }: { user: User }) {
     {
       label: "Log out",
       destructive: true,
-      onSelect: () => toast.info("Log out is not connected yet"),
+      onSelect: () => logout.mutate(),
     },
   ];
 

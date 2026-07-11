@@ -10,12 +10,15 @@ import {
 } from "@repo/library";
 import { setAccessToken, useApiMutation } from "@repo/library/apis";
 import { CommonButton, CommonCheckbox, CommonInput, toast } from "@repo/ui";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { AuthLayout } from "@/components/auth/layout/auth-layout";
+import { sessionKey } from "@/hooks/use-auth";
 import { setAuthHint, type AuthResponse } from "@/lib/auth";
 
 export function RegistrationComponent() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { control, handleSubmit } = useForm<RegistrationFormInput>({
     resolver: standardSchemaResolver(registrationFormSchema),
@@ -34,9 +37,10 @@ export function RegistrationComponent() {
     "register",
     "post",
     {
-      onSuccess: ({ accessToken }) => {
+      onSuccess: ({ user, accessToken }) => {
         setAccessToken(accessToken);
         setAuthHint(true);
+        queryClient.setQueryData(sessionKey, user);
         void router.push("/feed");
       },
       onError: (error) => {

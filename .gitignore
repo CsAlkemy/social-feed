@@ -22,6 +22,7 @@ build/
 coverage/
 *.log
 .DS_Store
+.claude/
 
 # provided task assets (kept out of the public repo)
 Selection Task for Full Stack Engineer at Appifylab/

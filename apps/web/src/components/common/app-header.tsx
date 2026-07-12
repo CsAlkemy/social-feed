@@ -54,11 +54,43 @@ function NavIconButton({ label, icon, badgeCount, className }: NavIconButtonProp
   );
 }
 
+function NavLink({
+  href,
+  label,
+  icon,
+  active,
+}: {
+  href: string;
+  label: string;
+  icon: ReactNode;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "relative flex h-16 items-center px-2 transition-colors sm:px-2.5",
+        active ? "text-primary" : "text-muted-foreground hover:text-primary",
+      )}
+    >
+      {icon}
+      {active ? (
+        <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-full bg-primary" />
+      ) : null}
+    </Link>
+  );
+}
+
 export function AppHeader({ user }: { user: User }) {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
   const logout = useLogout();
   const fullName = `${user.firstName} ${user.lastName}`;
+
+  const isActive = (href: string) =>
+    router.pathname === href || router.pathname.startsWith(`${href}/`);
 
   const accountMenuItems: CommonDropdownItem[] = [
     { label: "View profile", onSelect: () => router.push("/profile") },
@@ -108,16 +140,18 @@ export function AppHeader({ user }: { user: User }) {
             icon={<SearchIcon className="size-5" />}
             className="md:hidden"
           />
-          <Link
+          <NavLink
             href="/feed"
-            aria-label="Home"
-            aria-current="page"
-            className="relative flex h-16 items-center px-2 text-primary sm:px-2.5"
-          >
-            <HomeIcon className="size-5" />
-            <span aria-hidden className="absolute bottom-0 left-0 h-0.5 w-full bg-primary" />
-          </Link>
-          <NavIconButton label="Friends" icon={<UsersIcon className="size-5" />} />
+            label="Home"
+            icon={<HomeIcon className="size-5" />}
+            active={isActive("/feed")}
+          />
+          <NavLink
+            href="/members"
+            label="Friends"
+            icon={<UsersIcon className="size-5" />}
+            active={isActive("/members")}
+          />
           <NavIconButton
             label="Notifications"
             icon={<BellIcon className="size-5" />}

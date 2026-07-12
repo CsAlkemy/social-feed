@@ -12,13 +12,14 @@ import {
   XIcon,
 } from "lucide-react";
 
-import { PostVisibility, type User } from "@repo/library";
-import { Card, CommonButton, CommonDropdown, UserAvatar } from "@repo/ui";
+import { PostVisibility, type CreatePostInput, type User } from "@repo/library";
+import { Card, CommonButton, CommonDropdown, toast, UserAvatar } from "@repo/ui";
 
-export interface CreatePostInput {
-  content: string;
-  imageUrls: string[];
-  visibility: PostVisibility;
+import { uploadPostImage } from "@/lib/upload";
+
+interface ComposerImage {
+  file: File;
+  preview: string;
 }
 
 const VISIBILITY_OPTIONS = [
@@ -43,36 +44,57 @@ export function PostComposer({
   onCreate,
 }: {
   user: User;
-  onCreate: (input: CreatePostInput) => void;
+  onCreate: (input: CreatePostInput) => Promise<unknown>;
 }) {
   const [content, setContent] = useState("");
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [images, setImages] = useState<ComposerImage[]>([]);
   const [visibility, setVisibility] = useState<PostVisibility>(PostVisibility.PUBLIC);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fullName = `${user.firstName} ${user.lastName}`;
-  const canPost = content.trim().length > 0 || imageUrls.length > 0;
+  const canPost = content.trim().length > 0 || images.length > 0;
   const activeVisibility =
     VISIBILITY_OPTIONS.find((option) => option.value === visibility) ?? VISIBILITY_OPTIONS[0];
 
   const handleSelectImages = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     if (files.length === 0) return;
-    setImageUrls((previous) => [...previous, ...files.map((file) => URL.createObjectURL(file))]);
+    setImages((previous) => [
+      ...previous,
+      ...files.map((file) => ({ file, preview: URL.createObjectURL(file) })),
+    ]);
     event.target.value = "";
   };
 
-  const handleRemoveImage = (url: string) => {
-    URL.revokeObjectURL(url);
-    setImageUrls((previous) => previous.filter((existing) => existing !== url));
+  const handleRemoveImage = (preview: string) => {
+    URL.revokeObjectURL(preview);
+    setImages((previous) => previous.filter((image) => image.preview !== preview));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!canPost) return;
-    onCreate({ content: content.trim(), imageUrls, visibility });
+  const reset = () => {
+    images.forEach((image) => URL.revokeObjectURL(image.preview));
     setContent("");
-    setImageUrls([]);
+    setImages([]);
+    setVisibility(PostVisibility.PUBLIC);
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!canPost || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const imageUrls = await Promise.all(
+        images.map((image) => uploadPostImage(image.file)),
+      );
+      await onCreate({ content: content.trim(), imageUrls, visibility });
+      reset();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to publish your post");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -89,15 +111,15 @@ export function PostComposer({
           <PencilLineIcon className="size-4 text-muted-foreground" />
         </div>
 
-        {imageUrls.length > 0 ? (
+        {images.length > 0 ? (
           <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {imageUrls.map((url) => (
-              <div key={url} className="relative aspect-square overflow-hidden rounded-md">
-                <Image src={url} alt="Attached photo preview" fill unoptimized className="object-cover" />
+            {images.map((image) => (
+              <div key={image.preview} className="relative aspect-square overflow-hidden rounded-md">
+                <Image src={image.preview} alt="Attached photo preview" fill unoptimized className="object-cover" />
                 <button
                   type="button"
                   aria-label="Remove photo"
-                  onClick={() => handleRemoveImage(url)}
+                  onClick={() => handleRemoveImage(image.preview)}
                   className="absolute right-1.5 top-1.5 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
                 >
                   <XIcon className="size-3.5" />
@@ -157,7 +179,7 @@ export function PostComposer({
                 onSelect: () => setVisibility(value),
               }))}
             />
-            <CommonButton type="submit" disabled={!canPost}>
+            <CommonButton type="submit" disabled={!canPost} loading={isSubmitting}>
               <SendIcon className="size-4" />
               Post
             </CommonButton>

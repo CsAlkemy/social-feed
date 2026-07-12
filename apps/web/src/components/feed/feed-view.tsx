@@ -1,75 +1,83 @@
-import { useState } from "react";
+import type { CreatePostInput, Post, ReactionType } from "@repo/library";
+import { Card, CommonButton, FeedSkeleton } from "@repo/ui";
 
-import type { Post } from "@repo/library";
-
-import { PostComposer, type CreatePostInput } from "@/components/feed/composer/post-composer";
-import {
-  CURRENT_USER,
-  FEED_EVENTS,
-  FEED_POSTS,
-  FEED_STORIES,
-  FRIENDS,
-  SUGGESTED_PEOPLE,
-  YOU_MIGHT_LIKE,
-} from "@/components/feed/feed-data";
+import { PostComposer } from "@/components/feed/composer/post-composer";
+import { FEED_EVENTS, FEED_STORIES } from "@/components/feed/feed-data";
 import { EventsCard } from "@/components/feed/layout/left-sidebar/events-card";
 import { ExploreMenu } from "@/components/feed/layout/left-sidebar/explore-menu";
 import { SuggestedPeople } from "@/components/feed/layout/left-sidebar/suggested-people";
+import { FriendRequests } from "@/components/feed/layout/right-sidebar/friend-requests";
 import { FriendsList } from "@/components/feed/layout/right-sidebar/friends-list";
-import { YouMightLike } from "@/components/feed/layout/right-sidebar/you-might-like";
 import { PostList } from "@/components/feed/posts/post-list";
 import { StoryList } from "@/components/feed/stories/story-list";
+import { useSession } from "@/hooks/use-auth";
+import { useCreatePost, useFeed, useReactToPost } from "@/hooks/use-posts";
 
 export function FeedView() {
-  const [posts, setPosts] = useState<Post[]>(FEED_POSTS);
+  const { user } = useSession();
+  const feed = useFeed();
+  const createPost = useCreatePost();
+  const reactToPost = useReactToPost();
 
-  const handleToggleLike = (postId: string) => {
-    setPosts((previousPosts) =>
-      previousPosts.map((post) =>
-        post.id === postId
-          ? {
-              ...post,
-              likedByViewer: !post.likedByViewer,
-              likeCount: post.likeCount + (post.likedByViewer ? -1 : 1),
-            }
-          : post,
-      ),
-    );
-  };
+  const posts = feed.data?.pages.flatMap((page) => page.items) ?? [];
 
-  const handleCreatePost = ({ content, imageUrls, visibility }: CreatePostInput) => {
-    const newPost: Post = {
-      id: `post-${Date.now()}`,
-      content,
-      imageUrls,
-      visibility,
-      author: CURRENT_USER,
-      likeCount: 0,
-      commentCount: 0,
-      shareCount: 0,
-      likedByViewer: false,
-      createdAt: new Date().toISOString(),
-    };
-    setPosts((previousPosts) => [newPost, ...previousPosts]);
-  };
+  if (!user) return null;
+
+  const handleReact = (post: Post, reaction: ReactionType | null) =>
+    reactToPost.mutate({ post, reaction });
+
+  const handleCreate = (input: CreatePostInput) => createPost.mutateAsync(input);
 
   return (
     <main className="mx-auto grid min-h-0 w-full max-w-7xl flex-1 grid-cols-12 grid-rows-[100%] gap-4 px-4 sm:px-6 lg:px-8">
       <aside className="scrollbar-none hidden space-y-4 overflow-y-auto overscroll-contain py-6 lg:col-span-3 lg:block">
         <ExploreMenu />
-        <SuggestedPeople people={SUGGESTED_PEOPLE} />
+        <SuggestedPeople />
         <EventsCard events={FEED_EVENTS} />
       </aside>
 
       <section className="scrollbar-none col-span-12 space-y-4 overflow-y-auto overscroll-contain py-6 lg:col-span-9 xl:col-span-6">
-        <StoryList stories={FEED_STORIES} currentUser={CURRENT_USER} />
-        <PostComposer user={CURRENT_USER} onCreate={handleCreatePost} />
-        <PostList posts={posts} viewer={CURRENT_USER} onToggleLike={handleToggleLike} />
+        <StoryList stories={FEED_STORIES} currentUser={user} />
+        <PostComposer user={user} onCreate={handleCreate} />
+
+        {feed.isLoading ? (
+          <FeedSkeleton />
+        ) : feed.isError ? (
+          <Card className="p-6 text-center text-sm text-muted-foreground">
+            <p>We couldn&apos;t load the feed.</p>
+            <CommonButton
+              variant="outline"
+              className="mt-3"
+              onClick={() => void feed.refetch()}
+            >
+              Try again
+            </CommonButton>
+          </Card>
+        ) : posts.length === 0 ? (
+          <Card className="p-8 text-center text-sm text-muted-foreground">
+            No posts yet. Be the first to share something.
+          </Card>
+        ) : (
+          <>
+            <PostList posts={posts} viewer={user} onReact={handleReact} />
+            {feed.hasNextPage ? (
+              <div className="flex justify-center pb-2">
+                <CommonButton
+                  variant="outline"
+                  loading={feed.isFetchingNextPage}
+                  onClick={() => void feed.fetchNextPage()}
+                >
+                  Load more
+                </CommonButton>
+              </div>
+            ) : null}
+          </>
+        )}
       </section>
 
       <aside className="scrollbar-none hidden space-y-4 overflow-y-auto overscroll-contain py-6 xl:col-span-3 xl:block">
-        <YouMightLike person={YOU_MIGHT_LIKE} />
-        <FriendsList friends={FRIENDS} />
+        <FriendRequests />
+        <FriendsList />
       </aside>
     </main>
   );

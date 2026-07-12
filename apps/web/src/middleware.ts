@@ -10,7 +10,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (pathname.startsWith("/feed") && !authed) {
+  if ((pathname.startsWith("/feed") || pathname.startsWith("/posts")) && !authed) {
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
@@ -24,5 +24,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/feed/:path*", "/auth/:path*"],
+  matcher: ["/", "/feed/:path*", "/posts/:path*", "/auth/:path*"],
 };

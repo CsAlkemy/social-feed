@@ -10,7 +10,8 @@ function isProtectedRoute(pathname: string): boolean {
     pathname === "/feed" ||
     pathname.startsWith("/feed/") ||
     pathname === "/profile" ||
-    pathname.startsWith("/profile/")
+    pathname.startsWith("/profile/") ||
+    pathname.startsWith("/posts/")
   );
 }
 

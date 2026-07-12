@@ -1,4 +1,5 @@
 import type { PostVisibility } from "../enum/post-visibility";
+import type { ReactionType } from "../enum/reaction-type";
 import type { User } from "./user";
 
 export interface Post {
@@ -8,8 +9,9 @@ export interface Post {
   visibility: PostVisibility;
   author: User;
   likeCount: number;
+  reactionCounts: Partial<Record<ReactionType, number>>;
+  viewerReaction: ReactionType | null;
   commentCount: number;
   shareCount: number;
-  likedByViewer: boolean;
   createdAt: string;
 }

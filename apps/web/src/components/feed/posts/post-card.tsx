@@ -1,22 +1,66 @@
+import { useState } from "react";
+
 import { EllipsisVerticalIcon } from "lucide-react";
 
-import { formatRelativeTime, PostVisibility, type Post, type User } from "@repo/library";
-import { Card, CommonDropdown, toast, UserAvatar } from "@repo/ui";
+import {
+  formatRelativeTime,
+  PostVisibility,
+  type Post,
+  type ReactionType,
+  type User,
+} from "@repo/library";
+import {
+  Card,
+  CommonDropdown,
+  toast,
+  UserAvatar,
+  type CommonDropdownItem,
+} from "@repo/ui";
 
+import { EditPostModal } from "@/components/feed/posts/edit-post-modal";
 import { PostActions } from "@/components/feed/posts/post-actions";
+import { PostComments } from "@/components/feed/posts/post-comments";
 import { PostCommentBox } from "@/components/feed/posts/post-comment-box";
 import { PostImageGrid } from "@/components/feed/posts/post-image-grid";
+import { useDeletePost } from "@/hooks/use-posts";
 
 export function PostCard({
   post,
   viewer,
-  onToggleLike,
+  onReact,
 }: {
   post: Post;
   viewer: User;
-  onToggleLike: (postId: string) => void;
+  onReact: (post: Post, reaction: ReactionType | null) => void;
 }) {
+  const [showComments, setShowComments] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const deletePost = useDeletePost();
+
   const authorName = `${post.author.firstName} ${post.author.lastName}`;
+  const isAuthor = post.author.id === viewer.id;
+
+  const handleDelete = () =>
+    deletePost.mutate(post.id, {
+      onSuccess: () => toast.success("Post deleted"),
+      onError: (error) => toast.error(error.message || "Unable to delete post"),
+    });
+
+  const menuItems: CommonDropdownItem[] = [
+    { label: "Save Post", onSelect: () => toast.info("Save Post is not connected yet") },
+    {
+      label: "Turn On Notification",
+      onSelect: () => toast.info("Turn On Notification is not connected yet"),
+    },
+    { label: "Hide", onSelect: () => toast.info("Hide is not connected yet") },
+    ...(isAuthor
+      ? ([
+          { label: "Edit Post", onSelect: () => setIsEditing(true) },
+          { type: "separator" },
+          { label: "Delete Post", destructive: true, onSelect: handleDelete },
+        ] satisfies CommonDropdownItem[])
+      : []),
+  ];
 
   return (
     <Card className="p-5">
@@ -39,21 +83,7 @@ export function PostCard({
               <EllipsisVerticalIcon className="size-4" />
             </button>
           }
-          items={[
-            { label: "Save Post", onSelect: () => toast.info("Save Post is not connected yet") },
-            {
-              label: "Turn On Notification",
-              onSelect: () => toast.info("Turn On Notification is not connected yet"),
-            },
-            { label: "Hide", onSelect: () => toast.info("Hide is not connected yet") },
-            { label: "Edit Post", onSelect: () => toast.info("Edit Post is not connected yet") },
-            { type: "separator" },
-            {
-              label: "Delete Post",
-              destructive: true,
-              onSelect: () => toast.info("Delete Post is not connected yet"),
-            },
-          ]}
+          items={menuItems}
         />
       </div>
 
@@ -64,8 +94,21 @@ export function PostCard({
       ) : null}
       <PostImageGrid images={post.imageUrls} />
 
-      <PostActions post={post} onToggleLike={onToggleLike} />
-      <PostCommentBox viewer={viewer} />
+      <PostActions
+        post={post}
+        onReact={(reaction) => onReact(post, reaction)}
+        onToggleComments={() => setShowComments((value) => !value)}
+      />
+      <PostCommentBox
+        postId={post.id}
+        viewer={viewer}
+        onSubmitted={() => setShowComments(true)}
+      />
+      {showComments ? <PostComments postId={post.id} viewer={viewer} /> : null}
+
+      {isAuthor ? (
+        <EditPostModal post={post} open={isEditing} onOpenChange={setIsEditing} />
+      ) : null}
     </Card>
   );
 }

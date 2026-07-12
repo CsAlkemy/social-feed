@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Patch,
   Post,
+  Query,
   Req,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -24,7 +26,13 @@ import {
   ApiUnauthorizedResponse,
 } from "@nestjs/swagger";
 import {
+  cursorQuerySchema,
+  memberQuerySchema,
   updateProfileSchema,
+  type CursorQuery,
+  type Member,
+  type MemberQuery,
+  type Page,
   type UpdateProfileInput,
   type User as UserEntity,
 } from "@repo/library";
@@ -37,7 +45,12 @@ import {
   type AccessTokenPayload,
   type AuthUser,
 } from "../auth/jwt-auth.guard";
-import { USER_SCHEMA, VALIDATION_ERROR_SCHEMA } from "../common/docs/api-schemas";
+import {
+  MEMBER_SCHEMA,
+  USER_SCHEMA,
+  VALIDATION_ERROR_SCHEMA,
+  pageSchema,
+} from "../common/docs/api-schemas";
 import { zodToOpenApi } from "../common/docs/zod-to-openapi";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
 import type { Env } from "../config/env";
@@ -54,6 +67,32 @@ export class UsersController {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService<Env, true>,
   ) {}
+
+  @ApiOperation({ summary: "List platform members (cursor-paginated)" })
+  @ApiBearerAuth("access-token")
+  @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
+  @ApiOkResponse({ schema: pageSchema(MEMBER_SCHEMA) })
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  members(
+    @CurrentUser() user: AuthUser,
+    @Query(new ZodValidationPipe(memberQuerySchema)) query: MemberQuery,
+  ): Promise<Page<Member>> {
+    return this.usersService.listMembers(user.id, query);
+  }
+
+  @ApiOperation({ summary: "People you may know" })
+  @ApiBearerAuth("access-token")
+  @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
+  @ApiOkResponse({ schema: pageSchema(MEMBER_SCHEMA) })
+  @UseGuards(JwtAuthGuard)
+  @Get("suggestions")
+  suggestions(
+    @CurrentUser() user: AuthUser,
+    @Query(new ZodValidationPipe(cursorQuerySchema)) query: CursorQuery,
+  ): Promise<Page<Member>> {
+    return this.usersService.listSuggestions(user.id, query);
+  }
 
   @ApiOperation({ summary: "Update the signed-in user's profile" })
   @ApiBearerAuth("access-token")

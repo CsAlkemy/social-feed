@@ -9,7 +9,7 @@ import {
   type User as UserEntity,
 } from "@repo/library";
 
-import { Prisma, type User } from "../generated/prisma/client";
+import { FriendshipStatus, Prisma, type User } from "../generated/prisma/client";
 import { friendStatusMap } from "../friends/friend-status";
 import { PrismaService } from "../prisma/prisma.service";
 
@@ -48,9 +48,22 @@ export class UsersService {
 
   async listMembers(userId: string, query: MemberQuery): Promise<Page<Member>> {
     const search = query.search?.trim();
+    const friendships = await this.prisma.friendship.findMany({
+      where: {
+        status: FriendshipStatus.ACCEPTED,
+        OR: [{ requesterId: userId }, { addresseeId: userId }],
+      },
+      select: { requesterId: true, addresseeId: true },
+    });
+    const excludeIds = friendships.map((friendship) =>
+      friendship.requesterId === userId
+        ? friendship.addresseeId
+        : friendship.requesterId,
+    );
+
     const rows = await this.prisma.user.findMany({
       where: {
-        id: { not: userId },
+        id: { notIn: [userId, ...excludeIds] },
         ...(search
           ? {
               OR: [

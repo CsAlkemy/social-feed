@@ -28,10 +28,12 @@ export function PostCard({
   post,
   viewer,
   onReact,
+  priority = false,
 }: {
   post: Post;
   viewer: User;
   onReact: (post: Post, reaction: ReactionType | null) => void;
+  priority?: boolean;
 }) {
   const [showComments, setShowComments] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -92,7 +94,7 @@ export function PostCard({
           {post.content}
         </p>
       ) : null}
-      <PostImageGrid images={post.imageUrls} />
+      <PostImageGrid images={post.imageUrls} priority={priority} />
 
       <PostActions
         post={post}

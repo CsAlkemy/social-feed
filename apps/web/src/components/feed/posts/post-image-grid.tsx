@@ -13,12 +13,14 @@ function Tile({
   onOpen,
   overlay,
   className,
+  priority,
 }: {
   src: string;
   index: number;
   onOpen: (index: number) => void;
   overlay?: number;
   className?: string;
+  priority?: boolean;
 }) {
   return (
     <button
@@ -32,6 +34,7 @@ function Tile({
         alt={`Post image ${index + 1}`}
         fill
         sizes="(max-width: 1024px) 100vw, 640px"
+        priority={priority}
         unoptimized={src.startsWith("blob:")}
         className="object-cover transition-transform duration-200 group-hover:scale-105"
       />
@@ -44,7 +47,13 @@ function Tile({
   );
 }
 
-export function PostImageGrid({ images }: { images: string[] }) {
+export function PostImageGrid({
+  images,
+  priority = false,
+}: {
+  images: string[];
+  priority?: boolean;
+}) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   if (images.length === 0) return null;
@@ -73,6 +82,7 @@ export function PostImageGrid({ images }: { images: string[] }) {
             alt="Post image"
             width={680}
             height={400}
+            priority={priority}
             unoptimized={images[0]!.startsWith("blob:")}
             className="max-h-[32rem] w-full object-cover"
           />
@@ -90,14 +100,14 @@ export function PostImageGrid({ images }: { images: string[] }) {
   if (images.length === 2) {
     grid = (
       <div className={cn(gridClassName, "aspect-[16/9] grid-cols-2")}>
-        <Tile src={visible[0]!} index={0} onOpen={open} />
+        <Tile src={visible[0]!} index={0} onOpen={open} priority={priority} />
         <Tile src={visible[1]!} index={1} onOpen={open} />
       </div>
     );
   } else if (images.length === 3) {
     grid = (
       <div className={cn(gridClassName, "aspect-[16/10] grid-cols-2 grid-rows-2")}>
-        <Tile src={visible[0]!} index={0} onOpen={open} className="row-span-2" />
+        <Tile src={visible[0]!} index={0} onOpen={open} className="row-span-2" priority={priority} />
         <Tile src={visible[1]!} index={1} onOpen={open} />
         <Tile src={visible[2]!} index={2} onOpen={open} />
       </div>
@@ -106,14 +116,20 @@ export function PostImageGrid({ images }: { images: string[] }) {
     grid = (
       <div className={cn(gridClassName, "aspect-[4/3] grid-cols-2 grid-rows-2")}>
         {visible.map((src, index) => (
-          <Tile key={`${src}-${index}`} src={src} index={index} onOpen={open} />
+          <Tile
+            key={`${src}-${index}`}
+            src={src}
+            index={index}
+            onOpen={open}
+            priority={priority && index === 0}
+          />
         ))}
       </div>
     );
   } else {
     grid = (
       <div className={cn(gridClassName, "aspect-[16/10] grid-cols-6 grid-rows-2")}>
-        <Tile src={visible[0]!} index={0} onOpen={open} className="col-span-3" />
+        <Tile src={visible[0]!} index={0} onOpen={open} className="col-span-3" priority={priority} />
         <Tile src={visible[1]!} index={1} onOpen={open} className="col-span-3" />
         <Tile src={visible[2]!} index={2} onOpen={open} className="col-span-2" />
         <Tile src={visible[3]!} index={3} onOpen={open} className="col-span-2" />

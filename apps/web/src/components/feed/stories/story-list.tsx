@@ -87,7 +87,7 @@ export function StoryList({ currentUser }: { currentUser: User }) {
   const otherGroups = groups.filter((group) => group.author.id !== currentUser.id);
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none">
+    <div className="flex gap-3 overflow-x-auto px-0.5 py-1.5 scrollbar-none">
       <YourStoryCard
         currentUser={currentUser}
         ownGroup={ownGroup}

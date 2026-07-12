@@ -13,8 +13,14 @@ export function PostList({
 }) {
   return (
     <div className="space-y-4">
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} viewer={viewer} onReact={onReact} />
+      {posts.map((post, index) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          viewer={viewer}
+          onReact={onReact}
+          priority={index === 0}
+        />
       ))}
     </div>
   );

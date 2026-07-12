@@ -5,3 +5,4 @@ export * from "./pagination-schema";
 export * from "./post-schema";
 export * from "./profile-schema";
 export * from "./reaction-schema";
+export * from "./story-schema";

@@ -116,6 +116,49 @@ export const COMMENT_SCHEMA: ApiSchemaObject = {
   },
 };
 
+export const STORY_SCHEMA: ApiSchemaObject = {
+  type: "object",
+  properties: {
+    id: { type: "string", example: "cmrgnooue0000of3240g0lxg3" },
+    author: USER_SCHEMA,
+    imageUrl: { type: "string" },
+    caption: { type: "string", nullable: true, example: "On the road" },
+    viewed: { type: "boolean", example: false },
+    viewerCount: { type: "integer", example: 4 },
+    createdAt: {
+      type: "string",
+      format: "date-time",
+      example: "2026-07-11T17:46:15.110Z",
+    },
+    expiresAt: {
+      type: "string",
+      format: "date-time",
+      example: "2026-07-12T17:46:15.110Z",
+    },
+  },
+};
+
+export const STORY_GROUP_SCHEMA: ApiSchemaObject = {
+  type: "object",
+  properties: {
+    author: USER_SCHEMA,
+    stories: { type: "array", items: STORY_SCHEMA },
+    hasUnseen: { type: "boolean", example: true },
+  },
+};
+
+export const STORY_VIEWER_SCHEMA: ApiSchemaObject = {
+  type: "object",
+  properties: {
+    user: USER_SCHEMA,
+    viewedAt: {
+      type: "string",
+      format: "date-time",
+      example: "2026-07-11T17:46:15.110Z",
+    },
+  },
+};
+
 export function pageSchema(item: ApiSchemaObject): ApiSchemaObject {
   return {
     type: "object",

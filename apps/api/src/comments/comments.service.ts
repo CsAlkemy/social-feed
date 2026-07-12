@@ -11,6 +11,8 @@ import {
   type CreateCommentInput,
   type CursorQuery,
   type Page,
+  type Reactor,
+  type ReactorQuery,
   type UpdateCommentInput,
   type User as UserEntity,
 } from "@repo/library";
@@ -90,6 +92,33 @@ export class CommentsService {
     });
 
     return this.oneToEntity(comment);
+  }
+
+  async reactors(
+    userId: string,
+    commentId: string,
+    query: ReactorQuery,
+  ): Promise<Page<Reactor>> {
+    await this.getVisibleCommentOrThrow(userId, commentId);
+
+    const take = query.limit + 1;
+    const rows = await this.prisma.commentLike.findMany({
+      where: { commentId, ...(query.type ? { type: query.type } : {}) },
+      include: { user: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+    });
+
+    const hasMore = rows.length > query.limit;
+    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    return {
+      items: items.map((row) => ({
+        user: this.toUserEntity(row.user),
+        type: row.type as ReactionType,
+      })),
+      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+    };
   }
 
   async update(

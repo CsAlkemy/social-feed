@@ -5,7 +5,8 @@ import { CommentSkeleton, UserAvatar } from "@repo/ui";
 
 import { PostCommentBox } from "@/components/feed/posts/post-comment-box";
 import { ReactionControl } from "@/components/feed/posts/reaction-control";
-import { topReactions } from "@/components/feed/reaction-config";
+import { ReactionListModal } from "@/components/feed/posts/reaction-list-modal";
+import { ReactionSummary } from "@/components/feed/posts/reaction-summary";
 import {
   useDeleteComment,
   useReactToComment,
@@ -25,6 +26,7 @@ export function CommentItem({
 }) {
   const [showReplies, setShowReplies] = useState(false);
   const [showReplyBox, setShowReplyBox] = useState(false);
+  const [showReactors, setShowReactors] = useState(false);
   const reactTo = useReactToComment(postId);
   const deleteComment = useDeleteComment(postId);
   const replies = useReplies(comment.id, showReplies);
@@ -32,7 +34,6 @@ export function CommentItem({
   const isAuthor = comment.author.id === viewer.id;
   const authorName = `${comment.author.firstName} ${comment.author.lastName}`;
   const replyItems = replies.data?.pages.flatMap((page) => page.items) ?? [];
-  const top = topReactions(comment.reactionCounts);
 
   return (
     <div className="flex items-start gap-3">
@@ -50,18 +51,11 @@ export function CommentItem({
             reaction={comment.viewerReaction}
             onReact={(reaction) => reactTo.mutate({ comment, reaction })}
           />
-          {comment.likeCount > 0 ? (
-            <span className="flex items-center gap-1">
-              <span className="flex items-center" aria-hidden>
-                {top.map((reaction) => (
-                  <span key={reaction.type} className="leading-none">
-                    {reaction.emoji}
-                  </span>
-                ))}
-              </span>
-              {comment.likeCount}
-            </span>
-          ) : null}
+          <ReactionSummary
+            counts={comment.reactionCounts}
+            total={comment.likeCount}
+            onClick={() => setShowReactors(true)}
+          />
           {!isReply ? (
             <button
               type="button"
@@ -136,6 +130,15 @@ export function CommentItem({
           />
         ) : null}
       </div>
+
+      <ReactionListModal
+        resource="comments"
+        id={comment.id}
+        reactionCounts={comment.reactionCounts}
+        total={comment.likeCount}
+        open={showReactors}
+        onOpenChange={setShowReactors}
+      />
     </div>
   );
 }

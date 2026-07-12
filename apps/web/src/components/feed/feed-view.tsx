@@ -1,8 +1,8 @@
 import type { CreatePostInput, Post, ReactionType } from "@repo/library";
-import { Card, CommonButton, FeedSkeleton } from "@repo/ui";
+import { Card, CommonButton, FeedSkeleton, Spinner } from "@repo/ui";
 
 import { PostComposer } from "@/components/feed/composer/post-composer";
-import { FEED_EVENTS, FEED_STORIES } from "@/components/feed/feed-data";
+import { FEED_EVENTS } from "@/components/feed/feed-data";
 import { EventsCard } from "@/components/feed/layout/left-sidebar/events-card";
 import { ExploreMenu } from "@/components/feed/layout/left-sidebar/explore-menu";
 import { SuggestedPeople } from "@/components/feed/layout/left-sidebar/suggested-people";
@@ -11,6 +11,7 @@ import { FriendsList } from "@/components/feed/layout/right-sidebar/friends-list
 import { PostList } from "@/components/feed/posts/post-list";
 import { StoryList } from "@/components/feed/stories/story-list";
 import { useSession } from "@/hooks/use-auth";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { useCreatePost, useFeed, useReactToPost } from "@/hooks/use-posts";
 
 export function FeedView() {
@@ -20,6 +21,10 @@ export function FeedView() {
   const reactToPost = useReactToPost();
 
   const posts = feed.data?.pages.flatMap((page) => page.items) ?? [];
+  const sentinelRef = useInfiniteScroll<HTMLDivElement>(
+    () => void feed.fetchNextPage(),
+    feed.hasNextPage && !feed.isFetchingNextPage,
+  );
 
   if (!user) return null;
 
@@ -37,7 +42,7 @@ export function FeedView() {
       </aside>
 
       <section className="scrollbar-none col-span-12 space-y-4 overflow-y-auto overscroll-contain py-6 lg:col-span-9 xl:col-span-6">
-        <StoryList stories={FEED_STORIES} currentUser={user} />
+        <StoryList currentUser={user} />
         <PostComposer user={user} onCreate={handleCreate} />
 
         {feed.isLoading ? (
@@ -61,14 +66,8 @@ export function FeedView() {
           <>
             <PostList posts={posts} viewer={user} onReact={handleReact} />
             {feed.hasNextPage ? (
-              <div className="flex justify-center pb-2">
-                <CommonButton
-                  variant="outline"
-                  loading={feed.isFetchingNextPage}
-                  onClick={() => void feed.fetchNextPage()}
-                >
-                  Load more
-                </CommonButton>
+              <div ref={sentinelRef} className="flex justify-center pb-2">
+                {feed.isFetchingNextPage ? <Spinner /> : null}
               </div>
             ) : null}
           </>

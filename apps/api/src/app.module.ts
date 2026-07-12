@@ -9,6 +9,7 @@ import { validateEnv } from "./config/env";
 import { FriendsModule } from "./friends/friends.module";
 import { PostsModule } from "./posts/posts.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { StoriesModule } from "./stories/stories.module";
 import { UsersModule } from "./users/users.module";
 
 @Module({
@@ -20,6 +21,7 @@ import { UsersModule } from "./users/users.module";
     PostsModule,
     CommentsModule,
     FriendsModule,
+    StoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

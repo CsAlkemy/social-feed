@@ -29,7 +29,7 @@ export function FriendsList() {
       <SearchInput
         value={query}
         onChange={setQuery}
-        placeholder="input search text"
+        placeholder="Search friends"
         containerClassName="mt-4"
       />
 

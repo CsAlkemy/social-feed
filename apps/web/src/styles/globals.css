@@ -85,6 +85,15 @@
   }
 }
 
+@keyframes story-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
 @layer base {
   body {
     @apply bg-background font-sans text-foreground antialiased;

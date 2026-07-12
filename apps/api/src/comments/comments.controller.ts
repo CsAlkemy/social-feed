@@ -29,12 +29,15 @@ import {
   createCommentSchema,
   cursorQuerySchema,
   reactionSchema,
+  reactorQuerySchema,
   updateCommentSchema,
   type Comment as CommentEntity,
   type CreateCommentInput,
   type CursorQuery,
   type Page,
   type ReactionInput,
+  type Reactor,
+  type ReactorQuery,
   type UpdateCommentInput,
 } from "@repo/library";
 
@@ -42,6 +45,7 @@ import { CurrentUser } from "../auth/current-user.decorator";
 import { JwtAuthGuard, type AuthUser } from "../auth/jwt-auth.guard";
 import {
   COMMENT_SCHEMA,
+  REACTOR_SCHEMA,
   VALIDATION_ERROR_SCHEMA,
   pageSchema,
 } from "../common/docs/api-schemas";
@@ -93,6 +97,18 @@ export class CommentsController {
     @Query(new ZodValidationPipe(cursorQuerySchema)) query: CursorQuery,
   ): Promise<Page<CommentEntity>> {
     return this.commentsService.listReplies(user.id, id, query);
+  }
+
+  @ApiOperation({ summary: "List users who reacted to a comment" })
+  @ApiOkResponse({ schema: pageSchema(REACTOR_SCHEMA) })
+  @ApiNotFoundResponse({ description: "Comment not found" })
+  @Get("comments/:id/reactions")
+  reactors(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Query(new ZodValidationPipe(reactorQuerySchema)) query: ReactorQuery,
+  ): Promise<Page<Reactor>> {
+    return this.commentsService.reactors(user.id, id, query);
   }
 
   @ApiOperation({ summary: "Edit your comment" })

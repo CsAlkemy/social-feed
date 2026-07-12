@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { useRouter } from "next/router";
 
 import { cn, SearchInput } from "@repo/ui";
 
@@ -9,9 +11,17 @@ import { useFriendRequests, useFriends, useMembers } from "@/hooks/use-friends";
 type Tab = "friends" | "discover";
 
 export function MembersView() {
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>("friends");
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search.trim(), 300);
+
+  const queryParam = typeof router.query.q === "string" ? router.query.q : "";
+  useEffect(() => {
+    if (!queryParam) return;
+    setSearch(queryParam);
+    setTab("discover");
+  }, [queryParam]);
 
   const members = useMembers(debouncedSearch);
   const friends = useFriends();

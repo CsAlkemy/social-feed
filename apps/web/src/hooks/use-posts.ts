@@ -44,19 +44,20 @@ export function useFeed(limit = 10) {
 }
 
 export function useReactors(
-  postId: string,
+  resource: "posts" | "comments",
+  id: string,
   type: ReactionType | null,
   enabled: boolean,
 ) {
   return useInfiniteQuery({
-    queryKey: ["posts", postId, "reactions", type ?? "ALL"],
+    queryKey: [resource, id, "reactions", type ?? "ALL"],
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ limit: "20" });
       if (pageParam) params.set("cursor", pageParam);
       if (type) params.set("type", type);
       return apiRequest<Page<Reactor>>(
         "get",
-        `${apiUrl("posts", `${postId}/reactions`)}?${params.toString()}`,
+        `${apiUrl(resource, `${id}/reactions`)}?${params.toString()}`,
       );
     },
     initialPageParam: null as string | null,

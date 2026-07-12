@@ -7,8 +7,8 @@ import { cn } from "@repo/ui";
 
 import { ReactionControl } from "@/components/feed/posts/reaction-control";
 import { ReactionListModal } from "@/components/feed/posts/reaction-list-modal";
+import { ReactionSummary } from "@/components/feed/posts/reaction-summary";
 import { ShareModal } from "@/components/feed/posts/share-modal";
-import { topReactions } from "@/components/feed/reaction-config";
 
 const actionButtonClassName =
   "flex items-center justify-center gap-2 rounded-md py-2 text-sm font-medium transition-colors hover:bg-secondary";
@@ -22,7 +22,6 @@ export function PostActions({
   onReact: (reaction: ReactionType | null) => void;
   onToggleComments: () => void;
 }) {
-  const top = topReactions(post.reactionCounts);
   const [showReactors, setShowReactors] = useState(false);
   const [showShare, setShowShare] = useState(false);
 
@@ -30,20 +29,11 @@ export function PostActions({
     <>
       <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
         {post.likeCount > 0 ? (
-          <button
-            type="button"
+          <ReactionSummary
+            counts={post.reactionCounts}
+            total={post.likeCount}
             onClick={() => setShowReactors(true)}
-            className="flex items-center gap-1.5 rounded-md transition-colors hover:text-foreground"
-          >
-            <span className="flex items-center">
-              {top.map((reaction) => (
-                <span key={reaction.type} aria-hidden className="text-sm leading-none">
-                  {reaction.emoji}
-                </span>
-              ))}
-            </span>
-            <span className="hover:underline">{post.likeCount}</span>
-          </button>
+          />
         ) : (
           <span />
         )}
@@ -82,7 +72,8 @@ export function PostActions({
       </div>
 
       <ReactionListModal
-        postId={post.id}
+        resource="posts"
+        id={post.id}
         reactionCounts={post.reactionCounts}
         total={post.likeCount}
         open={showReactors}

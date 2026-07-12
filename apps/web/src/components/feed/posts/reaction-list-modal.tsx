@@ -7,20 +7,22 @@ import { REACTION_BY_TYPE, topReactions } from "@/components/feed/reaction-confi
 import { useReactors } from "@/hooks/use-posts";
 
 export function ReactionListModal({
-  postId,
+  resource,
+  id,
   reactionCounts,
   total,
   open,
   onOpenChange,
 }: {
-  postId: string;
+  resource: "posts" | "comments";
+  id: string;
   reactionCounts: Partial<Record<ReactionType, number>>;
   total: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
   const [tab, setTab] = useState<ReactionType | null>(null);
-  const reactors = useReactors(postId, tab, open);
+  const reactors = useReactors(resource, id, tab, open);
   const items = reactors.data?.pages.flatMap((page) => page.items) ?? [];
   const present = topReactions(reactionCounts, 6);
 

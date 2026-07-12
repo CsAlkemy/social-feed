@@ -1,9 +1,3 @@
-export interface FeedStory {
-  id: string;
-  name: string;
-  imageUrl: string;
-}
-
 export interface FeedEvent {
   id: string;
   title: string;
@@ -11,14 +5,6 @@ export interface FeedEvent {
   imageUrl: string;
   goingCount: number;
 }
-
-export const FEED_STORIES: FeedStory[] = [
-  { id: "story-1", name: "Ryan Roslansky", imageUrl: "/images/feed/story-2.png" },
-  { id: "story-2", name: "Ryan Roslansky", imageUrl: "/images/feed/story-3.png" },
-  { id: "story-3", name: "Ryan Roslansky", imageUrl: "/images/feed/story-4.png" },
-];
-
-export const YOUR_STORY_IMAGE = "/images/feed/story-1.png";
 
 export const FEED_EVENTS: FeedEvent[] = [
   {

@@ -129,13 +129,14 @@ export function ReactionControl({
         onPointerLeave={cancelLongPress}
         className={triggerClassName}
       >
-        {active ? (
-          <span aria-hidden className="text-base leading-none">
-            {active.emoji}
-          </span>
-        ) : (
-          <ThumbsUpIcon className="size-4" />
-        )}
+        {variant === "post" &&
+          (active ? (
+            <span aria-hidden className="text-base leading-none">
+              {active.emoji}
+            </span>
+          ) : (
+            <ThumbsUpIcon className="size-4" />
+          ))}
         {active ? active.label : "Like"}
       </button>
     </div>

@@ -23,6 +23,8 @@ model User {
   comments      Comment[]
   postLikes     PostLike[]
   commentLikes  CommentLike[]
+  stories       Story[]
+  storyViews    StoryView[]
 
   sentFriendRequests     Friendship[] @relation("SentFriendRequests")
   receivedFriendRequests Friendship[] @relation("ReceivedFriendRequests")
@@ -136,6 +138,37 @@ model CommentLike {
   @@index([commentId, createdAt(sort: Desc)])
   @@index([userId])
   @@map("comment_likes")
+}
+
+model Story {
+  id        String   @id @default(cuid())
+  authorId  String
+  imageUrl  String
+  caption   String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  author User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views  StoryView[]
+
+  @@index([expiresAt, authorId, createdAt])
+  @@index([authorId, createdAt(sort: Desc)])
+  @@map("stories")
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  storyId   String
+  viewerId  String
+  createdAt DateTime @default(now())
+
+  story  Story @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  viewer User  @relation(fields: [viewerId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, viewerId])
+  @@index([storyId, createdAt(sort: Desc)])
+  @@index([viewerId])
+  @@map("story_views")
 }
 
 model Friendship {

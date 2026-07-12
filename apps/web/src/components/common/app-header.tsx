@@ -29,14 +29,15 @@ interface NavIconButtonProps {
   icon: ReactNode;
   badgeCount?: number;
   className?: string;
+  onClick?: () => void;
 }
 
-function NavIconButton({ label, icon, badgeCount, className }: NavIconButtonProps) {
+function NavIconButton({ label, icon, badgeCount, className, onClick }: NavIconButtonProps) {
   return (
     <button
       type="button"
       aria-label={label}
-      onClick={() => toast.info(`${label} is not connected yet`)}
+      onClick={onClick ?? (() => toast.info(`${label} is not connected yet`))}
       className={cn(
         "flex h-16 items-center px-2 text-muted-foreground transition-colors hover:text-primary sm:px-2.5",
         className,
@@ -92,6 +93,12 @@ export function AppHeader({ user }: { user: User }) {
   const isActive = (href: string) =>
     router.pathname === href || router.pathname.startsWith(`${href}/`);
 
+  const runSearch = (value: string) => {
+    const query = value.trim();
+    if (!query) return;
+    void router.push({ pathname: "/members", query: { q: query } });
+  };
+
   const accountMenuItems: CommonDropdownItem[] = [
     { label: "View profile", onSelect: () => router.push("/profile") },
     { label: "Settings", disabled: true },
@@ -129,8 +136,8 @@ export function AppHeader({ user }: { user: User }) {
         <SearchInput
           value={searchValue}
           onChange={setSearchValue}
-          onSearch={() => toast.info("Search is not connected yet")}
-          placeholder="input search text"
+          onSearch={runSearch}
+          placeholder="Search people"
           containerClassName="hidden w-full max-w-105 md:block"
         />
 
@@ -139,6 +146,7 @@ export function AppHeader({ user }: { user: User }) {
             label="Search"
             icon={<SearchIcon className="size-5" />}
             className="md:hidden"
+            onClick={() => router.push("/members")}
           />
           <NavLink
             href="/feed"

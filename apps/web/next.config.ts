@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const apiOrigin = process.env.API_ORIGIN ?? "https://buddy-script-api.vercel.app";
+const apiOrigin = process.env.API_ORIGIN ?? "https://buddy-script-api.up.railway.app";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

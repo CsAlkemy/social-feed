@@ -53,6 +53,7 @@ const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 @ApiTags("users")
 @ApiBearerAuth("access-token")
 @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
+@UseGuards(JwtAuthGuard)
 @Controller("users")
 export class UsersController {
   constructor(
@@ -62,7 +63,6 @@ export class UsersController {
 
   @ApiOperation({ summary: "List platform members (cursor-paginated)" })
   @ApiOkResponse({ schema: pageSchema(MEMBER_SCHEMA) })
-  @UseGuards(JwtAuthGuard)
   @Get()
   members(
     @CurrentUser() user: AuthUser,
@@ -73,7 +73,6 @@ export class UsersController {
 
   @ApiOperation({ summary: "People you may know" })
   @ApiOkResponse({ schema: pageSchema(MEMBER_SCHEMA) })
-  @UseGuards(JwtAuthGuard)
   @Get("suggestions")
   suggestions(
     @CurrentUser() user: AuthUser,
@@ -89,7 +88,6 @@ export class UsersController {
   })
   @ApiBadRequestResponse({ schema: VALIDATION_ERROR_SCHEMA })
   @ApiConflictResponse({ description: "Email already registered" })
-  @UseGuards(JwtAuthGuard)
   @Patch("me")
   async updateMe(
     @CurrentUser() authUser: AuthUser,

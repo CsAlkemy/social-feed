@@ -52,6 +52,7 @@ const EVENT_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 @ApiTags("events")
 @ApiBearerAuth("access-token")
 @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
+@UseGuards(JwtAuthGuard)
 @Controller("events")
 export class EventsController {
   constructor(
@@ -61,7 +62,6 @@ export class EventsController {
 
   @ApiOperation({ summary: "List upcoming events (cursor-paginated)" })
   @ApiOkResponse({ schema: pageSchema(EVENT_SCHEMA) })
-  @UseGuards(JwtAuthGuard)
   @Get()
   list(
     @CurrentUser() user: AuthUser,
@@ -74,7 +74,6 @@ export class EventsController {
   @ApiBody({ schema: zodToOpenApi(createEventSchema) })
   @ApiCreatedResponse({ schema: EVENT_SCHEMA })
   @ApiBadRequestResponse({ schema: VALIDATION_ERROR_SCHEMA })
-  @UseGuards(JwtAuthGuard)
   @Post()
   create(
     @CurrentUser() user: AuthUser,
@@ -93,7 +92,6 @@ export class EventsController {
   @ApiOperation({ summary: "Mark yourself as going to an event" })
   @ApiOkResponse({ schema: EVENT_SCHEMA })
   @ApiNotFoundResponse({ description: "Event not found" })
-  @UseGuards(JwtAuthGuard)
   @Put(":id/attendance")
   attend(
     @CurrentUser() user: AuthUser,
@@ -105,7 +103,6 @@ export class EventsController {
   @ApiOperation({ summary: "Remove yourself from an event" })
   @ApiOkResponse({ schema: EVENT_SCHEMA })
   @ApiNotFoundResponse({ description: "Event not found" })
-  @UseGuards(JwtAuthGuard)
   @Delete(":id/attendance")
   unattend(
     @CurrentUser() user: AuthUser,

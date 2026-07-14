@@ -57,6 +57,7 @@ const STORY_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 @ApiTags("stories")
 @ApiBearerAuth("access-token")
 @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
+@UseGuards(JwtAuthGuard)
 @Controller("stories")
 export class StoriesController {
   constructor(
@@ -66,7 +67,6 @@ export class StoriesController {
 
   @ApiOperation({ summary: "List active stories grouped by author" })
   @ApiOkResponse({ schema: { type: "array", items: STORY_GROUP_SCHEMA } })
-  @UseGuards(JwtAuthGuard)
   @Get()
   feed(@CurrentUser() user: AuthUser): Promise<StoryGroup[]> {
     return this.storiesService.feed(user.id);
@@ -76,7 +76,6 @@ export class StoriesController {
   @ApiBody({ schema: zodToOpenApi(createStorySchema) })
   @ApiCreatedResponse({ schema: STORY_SCHEMA })
   @ApiBadRequestResponse({ schema: VALIDATION_ERROR_SCHEMA })
-  @UseGuards(JwtAuthGuard)
   @Post()
   create(
     @CurrentUser() user: AuthUser,
@@ -96,7 +95,6 @@ export class StoriesController {
   @ApiOkResponse({ schema: STORY_SCHEMA })
   @ApiNotFoundResponse({ description: "Story not found" })
   @HttpCode(HttpStatus.OK)
-  @UseGuards(JwtAuthGuard)
   @Post(":id/view")
   view(
     @CurrentUser() user: AuthUser,
@@ -109,7 +107,6 @@ export class StoriesController {
   @ApiOkResponse({ schema: pageSchema(STORY_VIEWER_SCHEMA) })
   @ApiForbiddenResponse({ description: "Not the author" })
   @ApiNotFoundResponse({ description: "Story not found" })
-  @UseGuards(JwtAuthGuard)
   @Get(":id/viewers")
   viewers(
     @CurrentUser() user: AuthUser,
@@ -124,7 +121,6 @@ export class StoriesController {
   @ApiForbiddenResponse({ description: "Not the author" })
   @ApiNotFoundResponse({ description: "Story not found" })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(JwtAuthGuard)
   @Delete(":id")
   remove(
     @CurrentUser() user: AuthUser,

@@ -63,6 +63,7 @@ const POST_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 @ApiTags("posts")
 @ApiBearerAuth("access-token")
 @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
+@UseGuards(JwtAuthGuard)
 @Controller("posts")
 export class PostsController {
   constructor(
@@ -72,7 +73,6 @@ export class PostsController {
 
   @ApiOperation({ summary: "List feed posts (cursor-paginated)" })
   @ApiOkResponse({ schema: pageSchema(POST_SCHEMA) })
-  @UseGuards(JwtAuthGuard)
   @Get()
   feed(
     @CurrentUser() user: AuthUser,
@@ -83,7 +83,6 @@ export class PostsController {
 
   @ApiOperation({ summary: "List posts you saved (cursor-paginated)" })
   @ApiOkResponse({ schema: pageSchema(POST_SCHEMA) })
-  @UseGuards(JwtAuthGuard)
   @Get("saved")
   saved(
     @CurrentUser() user: AuthUser,
@@ -96,7 +95,6 @@ export class PostsController {
   @ApiBody({ schema: zodToOpenApi(createPostSchema) })
   @ApiCreatedResponse({ schema: POST_SCHEMA })
   @ApiBadRequestResponse({ schema: VALIDATION_ERROR_SCHEMA })
-  @UseGuards(JwtAuthGuard)
   @Post()
   create(
     @CurrentUser() user: AuthUser,
@@ -115,7 +113,6 @@ export class PostsController {
   @ApiOperation({ summary: "Get a single post" })
   @ApiOkResponse({ schema: POST_SCHEMA })
   @ApiNotFoundResponse({ description: "Post not found" })
-  @UseGuards(JwtAuthGuard)
   @Get(":id")
   findOne(
     @CurrentUser() user: AuthUser,
@@ -127,7 +124,6 @@ export class PostsController {
   @ApiOperation({ summary: "List users who reacted to a post" })
   @ApiOkResponse({ schema: pageSchema(REACTOR_SCHEMA) })
   @ApiNotFoundResponse({ description: "Post not found" })
-  @UseGuards(JwtAuthGuard)
   @Get(":id/reactions")
   reactors(
     @CurrentUser() user: AuthUser,
@@ -143,7 +139,6 @@ export class PostsController {
   @ApiBadRequestResponse({ schema: VALIDATION_ERROR_SCHEMA })
   @ApiForbiddenResponse({ description: "Not the author" })
   @ApiNotFoundResponse({ description: "Post not found" })
-  @UseGuards(JwtAuthGuard)
   @Patch(":id")
   update(
     @CurrentUser() user: AuthUser,
@@ -158,7 +153,6 @@ export class PostsController {
   @ApiForbiddenResponse({ description: "Not the author" })
   @ApiNotFoundResponse({ description: "Post not found" })
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(JwtAuthGuard)
   @Delete(":id")
   remove(
     @CurrentUser() user: AuthUser,
@@ -170,7 +164,6 @@ export class PostsController {
   @ApiOperation({ summary: "Save a post for later" })
   @ApiOkResponse({ schema: POST_SCHEMA })
   @ApiNotFoundResponse({ description: "Post not found" })
-  @UseGuards(JwtAuthGuard)
   @Put(":id/save")
   save(
     @CurrentUser() user: AuthUser,
@@ -181,7 +174,6 @@ export class PostsController {
 
   @ApiOperation({ summary: "Remove a post from your saved list" })
   @ApiOkResponse({ schema: POST_SCHEMA })
-  @UseGuards(JwtAuthGuard)
   @Delete(":id/save")
   unsave(
     @CurrentUser() user: AuthUser,
@@ -194,7 +186,6 @@ export class PostsController {
   @ApiBody({ schema: zodToOpenApi(reactionSchema) })
   @ApiOkResponse({ schema: POST_SCHEMA })
   @ApiNotFoundResponse({ description: "Post not found" })
-  @UseGuards(JwtAuthGuard)
   @Put(":id/reaction")
   react(
     @CurrentUser() user: AuthUser,
@@ -206,7 +197,6 @@ export class PostsController {
 
   @ApiOperation({ summary: "Remove your reaction from a post" })
   @ApiOkResponse({ schema: POST_SCHEMA })
-  @UseGuards(JwtAuthGuard)
   @Delete(":id/reaction")
   unreact(
     @CurrentUser() user: AuthUser,

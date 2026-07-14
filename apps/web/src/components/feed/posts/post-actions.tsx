@@ -37,16 +37,13 @@ export function PostActions({
         ) : (
           <span />
         )}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onToggleComments}
-            className="transition-colors hover:text-foreground hover:underline"
-          >
-            {post.commentCount} Comment
-          </button>
-          <span>{post.shareCount} Share</span>
-        </div>
+        <button
+          type="button"
+          onClick={onToggleComments}
+          className="transition-colors hover:text-foreground hover:underline"
+        >
+          {post.commentCount} Comment
+        </button>
       </div>
 
       <div className="my-3 border-t border-border/60" />

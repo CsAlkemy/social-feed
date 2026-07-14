@@ -16,7 +16,7 @@ import {
 
 import { applyReaction } from "@/hooks/apply-reaction";
 import { patchInfiniteItem, removeInfiniteItem } from "@/hooks/infinite-cache";
-import { feedKey, postKey } from "@/hooks/use-posts";
+import { feedKey, postKey, reactorsKey } from "@/hooks/use-posts";
 
 export const commentsKey = (postId: string) =>
   ["posts", postId, "comments"] as const;
@@ -118,6 +118,9 @@ export function useReactToComment(postId: string) {
         reactionCounts: updated.reactionCounts,
         viewerReaction: updated.viewerReaction,
       }));
+      void queryClient.invalidateQueries({
+        queryKey: reactorsKey("comments", updated.id),
+      });
     },
   });
 }

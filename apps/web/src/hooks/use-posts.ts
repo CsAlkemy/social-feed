@@ -22,6 +22,8 @@ import { patchInfiniteItem, removeInfiniteItem } from "@/hooks/infinite-cache";
 export const feedKey = ["posts", "feed"] as const;
 export const savedPostsKey = ["posts", "saved"] as const;
 export const postKey = (postId: string) => ["post", postId] as const;
+export const reactorsKey = (resource: "posts" | "comments", id: string) =>
+  [resource, id, "reactions"] as const;
 
 export function usePost(postId: string) {
   return useQuery<Post, ApiError>({
@@ -90,7 +92,7 @@ export function useReactors(
   enabled: boolean,
 ) {
   return useInfiniteQuery({
-    queryKey: [resource, id, "reactions", type ?? "ALL"],
+    queryKey: [...reactorsKey(resource, id), type ?? "ALL"],
     queryFn: ({ pageParam }) => {
       const params = new URLSearchParams({ limit: "20" });
       if (pageParam) params.set("cursor", pageParam);
@@ -103,6 +105,7 @@ export function useReactors(
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     enabled,
+    staleTime: 0,
   });
 }
 
@@ -177,6 +180,9 @@ export function useReactToPost() {
       queryClient.setQueryData<Post>(postKey(updated.id), (current) =>
         current ? patch(current) : current,
       );
+      void queryClient.invalidateQueries({
+        queryKey: reactorsKey("posts", updated.id),
+      });
     },
   });
 }

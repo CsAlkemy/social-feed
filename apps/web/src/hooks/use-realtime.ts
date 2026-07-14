@@ -13,7 +13,7 @@ import { io, type Socket } from "socket.io-client";
 
 import { patchInfiniteItem, removeInfiniteItem } from "@/hooks/infinite-cache";
 import { commentsKey, repliesKey } from "@/hooks/use-comments";
-import { feedKey, postKey, savedPostsKey } from "@/hooks/use-posts";
+import { feedKey, postKey, reactorsKey, savedPostsKey } from "@/hooks/use-posts";
 
 let socket: Socket | null = null;
 let everConnected = false;
@@ -77,6 +77,9 @@ export function useRealtime(enabled: boolean): void {
         likeCount: event.likeCount,
         reactionCounts: event.reactionCounts,
       }));
+      void queryClient.invalidateQueries({
+        queryKey: reactorsKey("posts", event.postId),
+      });
     };
 
     const handleCommentReaction = (event: CommentReactionEvent) => {
@@ -88,6 +91,9 @@ export function useRealtime(enabled: boolean): void {
         likeCount: event.likeCount,
         reactionCounts: event.reactionCounts,
       }));
+      void queryClient.invalidateQueries({
+        queryKey: reactorsKey("comments", event.commentId),
+      });
     };
 
     const handleCommentCreated = (event: CommentChangeEvent) => {

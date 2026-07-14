@@ -9,12 +9,8 @@ import {
   Post,
   Query,
   Req,
-  ServiceUnavailableException,
-  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -39,15 +35,12 @@ import {
   type StoryGroup,
   type StoryViewer,
 } from "@repo/library";
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import type { HandleUploadBody } from "@vercel/blob/client";
 import type { Request } from "express";
 
 import { CurrentUser } from "../auth/current-user.decorator";
-import {
-  JwtAuthGuard,
-  type AccessTokenPayload,
-  type AuthUser,
-} from "../auth/jwt-auth.guard";
+import { JwtAuthGuard, type AuthUser } from "../auth/jwt-auth.guard";
+import { BlobUploadService } from "../common/blob-upload.service";
 import {
   STORY_GROUP_SCHEMA,
   STORY_SCHEMA,
@@ -57,10 +50,8 @@ import {
 } from "../common/docs/api-schemas";
 import { zodToOpenApi } from "../common/docs/zod-to-openapi";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
-import type { Env } from "../config/env";
 import { StoriesService } from "./stories.service";
 
-const STORY_IMAGE_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const STORY_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 
 @ApiTags("stories")
@@ -70,8 +61,7 @@ const STORY_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export class StoriesController {
   constructor(
     private readonly storiesService: StoriesService,
-    private readonly jwtService: JwtService,
-    private readonly config: ConfigService<Env, true>,
+    private readonly blobUpload: BlobUploadService,
   ) {}
 
   @ApiOperation({ summary: "List active stories grouped by author" })
@@ -98,30 +88,8 @@ export class StoriesController {
   @ApiExcludeEndpoint()
   @HttpCode(HttpStatus.OK)
   @Post("media/upload-url")
-  async createMediaUploadUrl(@Body() body: HandleUploadBody, @Req() req: Request) {
-    const token = this.config.get("BLOB_READ_WRITE_TOKEN", { infer: true });
-
-    if (!token) {
-      throw new ServiceUnavailableException("Blob storage is not configured");
-    }
-
-    return handleUpload({
-      token,
-      body,
-      request: req,
-      onBeforeGenerateToken: async () => {
-        await this.requireUserId(req);
-        return {
-          allowedContentTypes: STORY_IMAGE_CONTENT_TYPES,
-          maximumSizeInBytes: STORY_IMAGE_MAX_BYTES,
-          addRandomSuffix: true,
-        };
-      },
-      onUploadCompleted: async () => {
-        // Not reached in local dev (no public callback URL); the resulting
-        // URL is persisted when the story is created.
-      },
-    });
+  createMediaUploadUrl(@Body() body: HandleUploadBody, @Req() req: Request) {
+    return this.blobUpload.handle(req, body, STORY_IMAGE_MAX_BYTES);
   }
 
   @ApiOperation({ summary: "Mark a story as viewed" })
@@ -163,21 +131,5 @@ export class StoriesController {
     @Param("id") id: string,
   ): Promise<void> {
     return this.storiesService.remove(user.id, id);
-  }
-
-  private async requireUserId(req: Request): Promise<string> {
-    const [scheme, token] = req.headers.authorization?.split(" ") ?? [];
-
-    if (scheme !== "Bearer" || !token) {
-      throw new UnauthorizedException("Missing access token");
-    }
-
-    try {
-      const payload =
-        await this.jwtService.verifyAsync<AccessTokenPayload>(token);
-      return payload.sub;
-    } catch {
-      throw new UnauthorizedException("Invalid or expired access token");
-    }
   }
 }

@@ -4,16 +4,7 @@ import { useEffect, type ReactNode } from "react";
 import { Spinner } from "@repo/ui";
 
 import { useSession } from "@/hooks/use-auth";
-
-function isProtectedRoute(pathname: string): boolean {
-  return (
-    pathname === "/feed" ||
-    pathname.startsWith("/feed/") ||
-    pathname === "/profile" ||
-    pathname.startsWith("/profile/") ||
-    pathname.startsWith("/posts/")
-  );
-}
+import { isProtectedRoute } from "@/lib/protected-routes";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();

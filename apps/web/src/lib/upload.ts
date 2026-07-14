@@ -1,5 +1,6 @@
 import { upload } from "@vercel/blob/client";
 
+import { isUploadImageType, UPLOAD_IMAGE_LABEL } from "@repo/library";
 import { apiUrl, getAccessToken } from "@repo/library/apis";
 
 interface UploadOptions {
@@ -11,6 +12,10 @@ export async function uploadImage(
   file: File,
   options: UploadOptions = {},
 ): Promise<string> {
+  if (!isUploadImageType(file.type)) {
+    throw new Error(`Unsupported image type. Use ${UPLOAD_IMAGE_LABEL}.`);
+  }
+
   const token = getAccessToken();
   if (!token) throw new Error("You are signed out. Please sign in again.");
 

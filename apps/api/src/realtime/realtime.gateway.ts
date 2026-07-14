@@ -11,7 +11,13 @@ import type { AccessTokenPayload } from "../auth/jwt-auth.guard";
 
 const FEED_ROOM = "feed";
 
-@WebSocketGateway({ transports: ["websocket"] })
+@WebSocketGateway({
+  transports: ["websocket"],
+  cors: {
+    origin: process.env.WEB_ORIGIN ?? "http://localhost:3000",
+    credentials: true,
+  },
+})
 export class RealtimeGateway implements OnGatewayConnection {
   @WebSocketServer()
   private server!: Server;

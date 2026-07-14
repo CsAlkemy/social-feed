@@ -3,6 +3,7 @@ import { NestFactory } from "@nestjs/core";
 import cookieParser from "cookie-parser";
 
 import { AppModule } from "./app.module";
+import { PrismaExceptionFilter } from "./common/filters/prisma-exception.filter";
 import type { Env } from "./config/env";
 import { setupSwagger } from "./config/swagger";
 
@@ -12,6 +13,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix("api");
   app.use(cookieParser());
+  app.useGlobalFilters(new PrismaExceptionFilter());
   app.enableCors({
     origin: config.get("WEB_ORIGIN", { infer: true }),
     credentials: true,

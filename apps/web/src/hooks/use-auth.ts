@@ -4,6 +4,7 @@ import type { User } from "@repo/library";
 import { apiRequest, apiUrl, setAccessToken } from "@repo/library/apis";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { disconnectRealtime } from "@/hooks/use-realtime";
 import { setAuthHint, type AuthResponse } from "@/lib/auth";
 
 export const sessionKey = ["session"] as const;
@@ -46,6 +47,7 @@ export function useLogout() {
     onSettled: () => {
       setAccessToken(null);
       setAuthHint(false);
+      disconnectRealtime();
       queryClient.clear();
       void router.replace("/auth/login");
     },

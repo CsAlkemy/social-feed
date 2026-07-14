@@ -3,7 +3,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 
 import { ImageIcon, XIcon } from "lucide-react";
 
-import type { User } from "@repo/library";
+import { UPLOAD_IMAGE_ACCEPT, type User } from "@repo/library";
 import { CommonButton, CommonModal, toast } from "@repo/ui";
 
 import { useCreateStory } from "@/hooks/use-stories";
@@ -123,7 +123,7 @@ export function StoryComposerModal({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={UPLOAD_IMAGE_ACCEPT}
           onChange={handleSelect}
           className="hidden"
           aria-hidden

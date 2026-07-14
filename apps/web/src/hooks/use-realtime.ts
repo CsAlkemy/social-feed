@@ -36,6 +36,12 @@ function getSocket(): Socket | null {
   return socket;
 }
 
+export function disconnectRealtime(): void {
+  socket?.disconnect();
+  socket = null;
+  everConnected = false;
+}
+
 function patchPost(
   queryClient: QueryClient,
   postId: string,

@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { isProtectedRoute } from "@/lib/protected-routes";
+
 export function middleware(request: NextRequest) {
   const authed = request.cookies.has("authed");
   const { pathname } = request.nextUrl;
@@ -10,7 +12,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if ((pathname.startsWith("/feed") || pathname.startsWith("/posts")) && !authed) {
+  if (isProtectedRoute(pathname) && !authed) {
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
@@ -24,5 +26,14 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/feed/:path*", "/posts/:path*", "/auth/:path*"],
+  matcher: [
+    "/",
+    "/feed/:path*",
+    "/posts/:path*",
+    "/members/:path*",
+    "/events/:path*",
+    "/saved/:path*",
+    "/profile/:path*",
+    "/auth/:path*",
+  ],
 };

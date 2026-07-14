@@ -30,6 +30,7 @@ export function ReactionControl({
   const clearTimers = () => {
     if (openTimer.current) clearTimeout(openTimer.current);
     if (closeTimer.current) clearTimeout(closeTimer.current);
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
 
   const scheduleOpen = () => {

@@ -8,12 +8,8 @@ import {
   Post,
   Query,
   Req,
-  ServiceUnavailableException,
-  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -36,15 +32,12 @@ import {
   type UpdateProfileInput,
   type User as UserEntity,
 } from "@repo/library";
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import type { HandleUploadBody } from "@vercel/blob/client";
 import type { Request } from "express";
 
 import { CurrentUser } from "../auth/current-user.decorator";
-import {
-  JwtAuthGuard,
-  type AccessTokenPayload,
-  type AuthUser,
-} from "../auth/jwt-auth.guard";
+import { JwtAuthGuard, type AuthUser } from "../auth/jwt-auth.guard";
+import { BlobUploadService } from "../common/blob-upload.service";
 import {
   MEMBER_SCHEMA,
   USER_SCHEMA,
@@ -53,10 +46,8 @@ import {
 } from "../common/docs/api-schemas";
 import { zodToOpenApi } from "../common/docs/zod-to-openapi";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
-import type { Env } from "../config/env";
 import { UsersService } from "./users.service";
 
-const AVATAR_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
 @ApiTags("users")
@@ -64,8 +55,7 @@ const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
-    private readonly config: ConfigService<Env, true>,
+    private readonly blobUpload: BlobUploadService,
   ) {}
 
   @ApiOperation({ summary: "List platform members (cursor-paginated)" })
@@ -115,48 +105,7 @@ export class UsersController {
   @ApiExcludeEndpoint()
   @HttpCode(HttpStatus.OK)
   @Post("avatar/upload-url")
-  async createAvatarUploadUrl(
-    @Body() body: HandleUploadBody,
-    @Req() req: Request,
-  ) {
-    const token = this.config.get("BLOB_READ_WRITE_TOKEN", { infer: true });
-
-    if (!token) {
-      throw new ServiceUnavailableException("Blob storage is not configured");
-    }
-
-    return handleUpload({
-      token,
-      body,
-      request: req,
-      onBeforeGenerateToken: async () => {
-        await this.requireUserId(req);
-        return {
-          allowedContentTypes: AVATAR_CONTENT_TYPES,
-          maximumSizeInBytes: AVATAR_MAX_BYTES,
-          addRandomSuffix: true,
-        };
-      },
-      onUploadCompleted: async () => {
-        // Not reached in local dev (no public callback URL); the resulting
-        // URL is persisted by the client via PATCH /users/me.
-      },
-    });
-  }
-
-  private async requireUserId(req: Request): Promise<string> {
-    const [scheme, token] = req.headers.authorization?.split(" ") ?? [];
-
-    if (scheme !== "Bearer" || !token) {
-      throw new UnauthorizedException("Missing access token");
-    }
-
-    try {
-      const payload =
-        await this.jwtService.verifyAsync<AccessTokenPayload>(token);
-      return payload.sub;
-    } catch {
-      throw new UnauthorizedException("Invalid or expired access token");
-    }
+  createAvatarUploadUrl(@Body() body: HandleUploadBody, @Req() req: Request) {
+    return this.blobUpload.handle(req, body, AVATAR_MAX_BYTES);
   }
 }

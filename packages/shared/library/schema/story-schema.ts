@@ -1,7 +1,9 @@
 import { z } from "zod";
 
+import { httpUrlSchema } from "./url-schema";
+
 export const createStorySchema = z.object({
-  imageUrl: z.string().min(1).max(2048),
+  imageUrl: httpUrlSchema,
   caption: z.string().trim().max(200).optional(),
 });
 

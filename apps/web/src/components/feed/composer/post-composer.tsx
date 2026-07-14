@@ -12,7 +12,12 @@ import {
   XIcon,
 } from "lucide-react";
 
-import { PostVisibility, type CreatePostInput, type User } from "@repo/library";
+import {
+  PostVisibility,
+  UPLOAD_IMAGE_ACCEPT,
+  type CreatePostInput,
+  type User,
+} from "@repo/library";
 import { Card, CommonButton, CommonDropdown, toast, UserAvatar } from "@repo/ui";
 
 import { CreateEventModal } from "@/components/events/create-event-modal";
@@ -185,7 +190,7 @@ export function PostComposer({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={UPLOAD_IMAGE_ACCEPT}
           multiple
           onChange={handleSelectImages}
           className="hidden"

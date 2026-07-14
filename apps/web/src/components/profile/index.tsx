@@ -1,7 +1,13 @@
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useForm } from "react-hook-form";
 
-import { updateProfileSchema, type UpdateProfileInput, type User } from "@repo/library";
+import {
+  updateProfileSchema,
+  UPLOAD_IMAGE_ACCEPT,
+  UPLOAD_IMAGE_LABEL,
+  type UpdateProfileInput,
+  type User,
+} from "@repo/library";
 import { useApiMutation } from "@repo/library/apis";
 import {
   Card,
@@ -74,6 +80,8 @@ export function ProfileComponent() {
               fallback={fullName}
               value={avatarUrl ?? null}
               uploader={uploadImage}
+              accept={UPLOAD_IMAGE_ACCEPT}
+              hint={`${UPLOAD_IMAGE_LABEL}, up to 5MB.`}
               onChange={(next) => setValue("avatarUrl", next, { shouldDirty: true })}
             />
 

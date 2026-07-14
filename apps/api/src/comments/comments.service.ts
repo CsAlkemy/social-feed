@@ -97,13 +97,15 @@ export class CommentsService {
       },
     );
 
-    this.realtime.publish("comment:created", {
-      commentId: created.id,
-      postId,
-      parentId,
-      postCommentCount: post.commentCount,
-      parentReplyCount: parent?.replyCount ?? null,
-    });
+    if (post.visibility === PostVisibility.PUBLIC) {
+      this.realtime.publish("comment:created", {
+        commentId: created.id,
+        postId,
+        parentId,
+        postCommentCount: post.commentCount,
+        parentReplyCount: parent?.replyCount ?? null,
+      });
+    }
 
     return this.oneToEntity(created);
   }
@@ -170,13 +172,15 @@ export class CommentsService {
       return { post, parent };
     });
 
-    this.realtime.publish("comment:deleted", {
-      commentId,
-      postId: comment.postId,
-      parentId: comment.parentId,
-      postCommentCount: post.commentCount,
-      parentReplyCount: parent?.replyCount ?? null,
-    });
+    if (post.visibility === PostVisibility.PUBLIC) {
+      this.realtime.publish("comment:deleted", {
+        commentId,
+        postId: comment.postId,
+        parentId: comment.parentId,
+        postCommentCount: post.commentCount,
+        parentReplyCount: parent?.replyCount ?? null,
+      });
+    }
   }
 
   async react(
@@ -187,21 +191,13 @@ export class CommentsService {
     await this.getVisibleCommentOrThrow(userId, commentId);
 
     await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.commentLike.findUnique({
+      await tx.commentLike.upsert({
         where: { commentId_userId: { commentId, userId } },
+        create: { commentId, userId, type },
+        update: { type },
       });
-      if (!existing) {
-        await tx.commentLike.create({ data: { commentId, userId, type } });
-        await tx.comment.update({
-          where: { id: commentId },
-          data: { likeCount: { increment: 1 } },
-        });
-      } else if ((existing.type as string) !== type) {
-        await tx.commentLike.update({
-          where: { id: existing.id },
-          data: { type },
-        });
-      }
+      const likeCount = await tx.commentLike.count({ where: { commentId } });
+      await tx.comment.update({ where: { id: commentId }, data: { likeCount } });
     });
 
     return this.reactionToEntity(userId, commentId);
@@ -230,13 +226,19 @@ export class CommentsService {
     const comment = await this.oneToEntity(
       await this.fetchWithInclude(userId, commentId),
     );
-    this.realtime.publish("comment:reaction", {
-      commentId: comment.id,
-      postId: comment.postId,
-      parentId: comment.parentId,
-      likeCount: comment.likeCount,
-      reactionCounts: comment.reactionCounts,
+    const post = await this.prisma.post.findUnique({
+      where: { id: comment.postId },
+      select: { visibility: true },
     });
+    if (post?.visibility === PostVisibility.PUBLIC) {
+      this.realtime.publish("comment:reaction", {
+        commentId: comment.id,
+        postId: comment.postId,
+        parentId: comment.parentId,
+        likeCount: comment.likeCount,
+        reactionCounts: comment.reactionCounts,
+      });
+    }
     return comment;
   }
 

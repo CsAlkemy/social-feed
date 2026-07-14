@@ -179,18 +179,13 @@ export class PostsService {
     await this.getVisibleOrThrow(userId, postId);
 
     await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.postLike.findUnique({
+      await tx.postLike.upsert({
         where: { postId_userId: { postId, userId } },
+        create: { postId, userId, type },
+        update: { type },
       });
-      if (!existing) {
-        await tx.postLike.create({ data: { postId, userId, type } });
-        await tx.post.update({
-          where: { id: postId },
-          data: { likeCount: { increment: 1 } },
-        });
-      } else if ((existing.type as string) !== type) {
-        await tx.postLike.update({ where: { id: existing.id }, data: { type } });
-      }
+      const likeCount = await tx.postLike.count({ where: { postId } });
+      await tx.post.update({ where: { id: postId }, data: { likeCount } });
     });
 
     return this.reactionToEntity(userId, postId);
@@ -217,11 +212,13 @@ export class PostsService {
     postId: string,
   ): Promise<PostEntity> {
     const post = await this.oneToEntity(await this.fetchVisible(userId, postId));
-    this.realtime.publish("post:reaction", {
-      postId: post.id,
-      likeCount: post.likeCount,
-      reactionCounts: post.reactionCounts,
-    });
+    if (post.visibility === PostVisibility.PUBLIC) {
+      this.realtime.publish("post:reaction", {
+        postId: post.id,
+        likeCount: post.likeCount,
+        reactionCounts: post.reactionCounts,
+      });
+    }
     return post;
   }
 

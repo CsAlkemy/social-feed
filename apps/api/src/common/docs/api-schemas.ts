@@ -190,6 +190,7 @@ export function pageSchema(item: ApiSchemaObject): ApiSchemaObject {
     properties: {
       items: { type: "array", items: item },
       nextCursor: { type: "string", nullable: true, example: null },
+      total: { type: "number", description: "Only present on friend lists" },
     },
   };
 }

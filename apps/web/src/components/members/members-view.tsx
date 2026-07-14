@@ -32,12 +32,8 @@ export function MembersView() {
   const friends = useFriends();
   const requests = useFriendRequests("incoming");
 
-  const requestCount =
-    requests.data?.pages.reduce((total, page) => total + page.items.length, 0) ??
-    0;
-  const friendCount =
-    friends.data?.pages.reduce((total, page) => total + page.items.length, 0) ??
-    0;
+  const requestCount = requests.data?.pages[0]?.total ?? 0;
+  const friendCount = friends.data?.pages[0]?.total ?? 0;
 
   const tabs: { key: Tab; label: string; count?: number }[] = [
     { key: "friends", label: "My Friends", count: friendCount },

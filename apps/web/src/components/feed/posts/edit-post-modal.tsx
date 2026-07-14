@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from "react";
 
 import { ChevronDownIcon, GlobeIcon, ImageIcon, LockIcon, XIcon } from "lucide-react";
 
-import { PostVisibility, type Post } from "@repo/library";
+import { PostVisibility, UPLOAD_IMAGE_ACCEPT, type Post } from "@repo/library";
 import { CommonButton, CommonDropdown, CommonModal, Textarea, toast } from "@repo/ui";
 
 import { useUpdatePost } from "@/hooks/use-posts";
@@ -204,7 +204,7 @@ export function EditPostModal({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={UPLOAD_IMAGE_ACCEPT}
           multiple
           onChange={handleSelectImages}
           className="hidden"

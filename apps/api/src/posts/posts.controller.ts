@@ -11,12 +11,8 @@ import {
   Put,
   Query,
   Req,
-  ServiceUnavailableException,
-  UnauthorizedException,
   UseGuards,
 } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -46,15 +42,12 @@ import {
   type ReactorQuery,
   type UpdatePostInput,
 } from "@repo/library";
-import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import type { HandleUploadBody } from "@vercel/blob/client";
 import type { Request } from "express";
 
 import { CurrentUser } from "../auth/current-user.decorator";
-import {
-  JwtAuthGuard,
-  type AccessTokenPayload,
-  type AuthUser,
-} from "../auth/jwt-auth.guard";
+import { JwtAuthGuard, type AuthUser } from "../auth/jwt-auth.guard";
+import { BlobUploadService } from "../common/blob-upload.service";
 import {
   POST_SCHEMA,
   REACTOR_SCHEMA,
@@ -63,10 +56,8 @@ import {
 } from "../common/docs/api-schemas";
 import { zodToOpenApi } from "../common/docs/zod-to-openapi";
 import { ZodValidationPipe } from "../common/pipes/zod-validation.pipe";
-import type { Env } from "../config/env";
 import { PostsService } from "./posts.service";
 
-const POST_IMAGE_CONTENT_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const POST_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 
 @ApiTags("posts")
@@ -76,8 +67,7 @@ const POST_IMAGE_MAX_BYTES = 10 * 1024 * 1024;
 export class PostsController {
   constructor(
     private readonly postsService: PostsService,
-    private readonly jwtService: JwtService,
-    private readonly config: ConfigService<Env, true>,
+    private readonly blobUpload: BlobUploadService,
   ) {}
 
   @ApiOperation({ summary: "List feed posts (cursor-paginated)" })
@@ -118,30 +108,8 @@ export class PostsController {
   @ApiExcludeEndpoint()
   @HttpCode(HttpStatus.OK)
   @Post("media/upload-url")
-  async createMediaUploadUrl(@Body() body: HandleUploadBody, @Req() req: Request) {
-    const token = this.config.get("BLOB_READ_WRITE_TOKEN", { infer: true });
-
-    if (!token) {
-      throw new ServiceUnavailableException("Blob storage is not configured");
-    }
-
-    return handleUpload({
-      token,
-      body,
-      request: req,
-      onBeforeGenerateToken: async () => {
-        await this.requireUserId(req);
-        return {
-          allowedContentTypes: POST_IMAGE_CONTENT_TYPES,
-          maximumSizeInBytes: POST_IMAGE_MAX_BYTES,
-          addRandomSuffix: true,
-        };
-      },
-      onUploadCompleted: async () => {
-        // Not reached in local dev (no public callback URL); the resulting
-        // URL is persisted when the post is created.
-      },
-    });
+  createMediaUploadUrl(@Body() body: HandleUploadBody, @Req() req: Request) {
+    return this.blobUpload.handle(req, body, POST_IMAGE_MAX_BYTES);
   }
 
   @ApiOperation({ summary: "Get a single post" })
@@ -245,21 +213,5 @@ export class PostsController {
     @Param("id") id: string,
   ): Promise<PostEntity> {
     return this.postsService.unreact(user.id, id);
-  }
-
-  private async requireUserId(req: Request): Promise<string> {
-    const [scheme, token] = req.headers.authorization?.split(" ") ?? [];
-
-    if (scheme !== "Bearer" || !token) {
-      throw new UnauthorizedException("Missing access token");
-    }
-
-    try {
-      const payload =
-        await this.jwtService.verifyAsync<AccessTokenPayload>(token);
-      return payload.sub;
-    } catch {
-      throw new UnauthorizedException("Invalid or expired access token");
-    }
   }
 }

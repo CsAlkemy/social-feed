@@ -6,6 +6,8 @@ import { ImageIcon, XIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { UPLOAD_IMAGE_ACCEPT } from "@repo/library";
+
 import {
   CommonButton,
   CommonInput,
@@ -168,7 +170,7 @@ export function CreateEventModal({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept={UPLOAD_IMAGE_ACCEPT}
           onChange={handleSelect}
           className="hidden"
           aria-hidden

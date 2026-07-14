@@ -20,18 +20,22 @@ export class FriendsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listFriends(userId: string, query: CursorQuery): Promise<Page<Member>> {
-    const rows = await this.prisma.friendship.findMany({
-      where: {
-        status: FriendshipStatus.ACCEPTED,
-        OR: [{ requesterId: userId }, { addresseeId: userId }],
-      },
-      include: { requester: true, addressee: true },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+    const where = {
+      status: FriendshipStatus.ACCEPTED,
+      OR: [{ requesterId: userId }, { addresseeId: userId }],
+    };
+    const [rows, total] = await Promise.all([
+      this.prisma.friendship.findMany({
+        where,
+        include: { requester: true, addressee: true },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: query.limit + 1,
+        ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      }),
+      this.prisma.friendship.count({ where }),
+    ]);
 
-    return this.toPage(rows, query.limit, (row) =>
+    return this.toPage(rows, query.limit, total, (row) =>
       this.toMember(
         row.requesterId === userId ? row.addressee : row.requester,
         FriendStatus.FRIENDS,
@@ -45,22 +49,26 @@ export class FriendsService {
     direction: "incoming" | "outgoing",
   ): Promise<Page<Member>> {
     const incoming = direction === "incoming";
-    const rows = await this.prisma.friendship.findMany({
-      where: {
-        status: FriendshipStatus.PENDING,
-        ...(incoming ? { addresseeId: userId } : { requesterId: userId }),
-      },
-      include: { requester: true, addressee: true },
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
-    });
+    const where = {
+      status: FriendshipStatus.PENDING,
+      ...(incoming ? { addresseeId: userId } : { requesterId: userId }),
+    };
+    const [rows, total] = await Promise.all([
+      this.prisma.friendship.findMany({
+        where,
+        include: { requester: true, addressee: true },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: query.limit + 1,
+        ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      }),
+      this.prisma.friendship.count({ where }),
+    ]);
 
     const status = incoming
       ? FriendStatus.REQUEST_RECEIVED
       : FriendStatus.REQUEST_SENT;
 
-    return this.toPage(rows, query.limit, (row) =>
+    return this.toPage(rows, query.limit, total, (row) =>
       this.toMember(incoming ? row.requester : row.addressee, status),
     );
   }
@@ -143,6 +151,7 @@ export class FriendsService {
   private toPage<T extends { id: string }>(
     rows: T[],
     limit: number,
+    total: number,
     map: (row: T) => Member,
   ): Page<Member> {
     const hasMore = rows.length > limit;
@@ -150,6 +159,7 @@ export class FriendsService {
     return {
       items: items.map(map),
       nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      total,
     };
   }
 

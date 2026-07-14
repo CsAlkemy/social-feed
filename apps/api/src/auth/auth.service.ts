@@ -107,8 +107,6 @@ export class AuthService {
     }
 
     if (stored.revokedAt) {
-      // A rotated-out token came back: assume it was stolen and revoke every
-      // active session for this user.
       await this.prisma.refreshToken.updateMany({
         where: { userId: stored.userId, revokedAt: null },
         data: { revokedAt: new Date() },

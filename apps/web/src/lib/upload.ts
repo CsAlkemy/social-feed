@@ -1,7 +1,7 @@
 import { upload } from "@vercel/blob/client";
 
 import { isUploadImageType, UPLOAD_IMAGE_LABEL } from "@repo/library";
-import { apiUrl, getAccessToken } from "@repo/library/apis";
+import { apiUrl, getValidAccessToken } from "@repo/library/apis";
 
 interface UploadOptions {
   pathPrefix?: string;
@@ -16,7 +16,7 @@ export async function uploadImage(
     throw new Error(`Unsupported image type. Use ${UPLOAD_IMAGE_LABEL}.`);
   }
 
-  const token = getAccessToken();
+  const token = await getValidAccessToken();
   if (!token) throw new Error("You are signed out. Please sign in again.");
 
   const pathPrefix = options.pathPrefix ?? "avatars";

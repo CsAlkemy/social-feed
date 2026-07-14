@@ -24,6 +24,21 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
+function expiresSoon(token: string): boolean {
+  try {
+    const payload = token.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/");
+    const { exp } = JSON.parse(atob(payload)) as { exp?: number };
+    return !exp || exp * 1000 - Date.now() < 30_000;
+  } catch {
+    return true;
+  }
+}
+
+export async function getValidAccessToken(): Promise<string | null> {
+  if (accessToken && !expiresSoon(accessToken)) return accessToken;
+  return (await refresh()) ? accessToken : null;
+}
+
 export function apiUrl(apiModule: string, lastUrl?: string): string {
   const path = [apiModule, lastUrl].filter(Boolean).join("/");
   return `${config.baseUrl.replace(/\/+$/, "")}/${path}`;

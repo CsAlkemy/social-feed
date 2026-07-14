@@ -7,7 +7,7 @@ import type {
   Post,
   PostReactionEvent,
 } from "@repo/library";
-import { getAccessToken } from "@repo/library/apis";
+import { getValidAccessToken } from "@repo/library/apis";
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { io, type Socket } from "socket.io-client";
 
@@ -31,7 +31,9 @@ function getSocket(): Socket | null {
   if (!url) return null;
   socket ??= io(url, {
     transports: ["websocket"],
-    auth: (callback) => callback({ token: getAccessToken() }),
+    auth: (callback) => {
+      void getValidAccessToken().then((token) => callback({ token }));
+    },
   });
   return socket;
 }

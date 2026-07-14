@@ -6,32 +6,32 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.5rem; /* rounded-md = 6px */
-  --background: #f0f2f5; /* --bg1 */
-  --foreground: #2d3748; /* --color */
-  --card: #ffffff; /* --bg2 */
-  --card-foreground: #1a202c; /* --color1 */
+  --radius: 0.5rem;
+  --background: #f0f2f5;
+  --foreground: #2d3748;
+  --card: #ffffff;
+  --card-foreground: #1a202c;
   --popover: #ffffff;
   --popover-foreground: #2d3748;
-  --primary: #1890ff; /* --color5 */
+  --primary: #1890ff;
   --primary-foreground: #ffffff;
-  --secondary: #f5f5f5; /* --bg3 */
+  --secondary: #f5f5f5;
   --secondary-foreground: #2d3748;
   --muted: #f0f2f5;
-  --muted-foreground: #666666; /* --color7 */
-  --accent: #e8f4ff; /* --color9 */
+  --muted-foreground: #666666;
+  --accent: #e8f4ff;
   --accent-foreground: #1890ff;
   --destructive: #ef4444;
-  --success: #0acf83; /* --color8 */
-  --border: #e8e8e8; /* --bcolor2 */
+  --success: #0acf83;
+  --border: #e8e8e8;
   --input: #d9d9d9;
   --ring: #1890ff;
 }
 
 .dark {
-  --background: #112032; /* --bg5 */
+  --background: #112032;
   --foreground: #e5e5e5;
-  --card: #232e42; /* --bg6 */
+  --card: #232e42;
   --card-foreground: #f0f2f5;
   --popover: #232e42;
   --popover-foreground: #e5e5e5;
@@ -116,7 +116,6 @@
   }
 }
 
-/* nprogress route indicator */
 #nprogress .bar {
   background: var(--primary) !important;
   height: 3px !important;

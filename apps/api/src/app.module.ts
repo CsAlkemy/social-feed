@@ -10,6 +10,7 @@ import { EventsModule } from "./events/events.module";
 import { FriendsModule } from "./friends/friends.module";
 import { PostsModule } from "./posts/posts.module";
 import { PrismaModule } from "./prisma/prisma.module";
+import { RealtimeModule } from "./realtime/realtime.module";
 import { StoriesModule } from "./stories/stories.module";
 import { UsersModule } from "./users/users.module";
 
@@ -22,6 +23,7 @@ import { UsersModule } from "./users/users.module";
     PostsModule,
     CommentsModule,
     EventsModule,
+    RealtimeModule,
     FriendsModule,
     StoriesModule,
   ],

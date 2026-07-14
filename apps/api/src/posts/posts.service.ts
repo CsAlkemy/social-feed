@@ -18,6 +18,7 @@ import {
 
 import { Prisma, type User } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { RealtimeGateway } from "../realtime/realtime.gateway";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -31,7 +32,10 @@ type ReactionCounts = Partial<Record<ReactionType, number>>;
 
 @Injectable()
 export class PostsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
   async create(userId: string, input: CreatePostInput): Promise<PostEntity> {
     const post = await this.prisma.post.create({
@@ -189,7 +193,7 @@ export class PostsService {
       }
     });
 
-    return this.oneToEntity(await this.fetchVisible(userId, postId));
+    return this.reactionToEntity(userId, postId);
   }
 
   async unreact(userId: string, postId: string): Promise<PostEntity> {
@@ -205,7 +209,20 @@ export class PostsService {
       }
     });
 
-    return this.oneToEntity(await this.fetchVisible(userId, postId));
+    return this.reactionToEntity(userId, postId);
+  }
+
+  private async reactionToEntity(
+    userId: string,
+    postId: string,
+  ): Promise<PostEntity> {
+    const post = await this.oneToEntity(await this.fetchVisible(userId, postId));
+    this.realtime.publish("post:reaction", {
+      postId: post.id,
+      likeCount: post.likeCount,
+      reactionCounts: post.reactionCounts,
+    });
+    return post;
   }
 
   private include(userId: string) {

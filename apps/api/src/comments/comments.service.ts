@@ -19,6 +19,7 @@ import {
 
 import { Prisma, type User } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { RealtimeGateway } from "../realtime/realtime.gateway";
 
 type CommentWithRelations = Prisma.CommentGetPayload<{
   include: { author: true; likes: { select: { id: true; type: true } } };
@@ -28,7 +29,10 @@ type ReactionCounts = Partial<Record<ReactionType, number>>;
 
 @Injectable()
 export class CommentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: RealtimeGateway,
+  ) {}
 
   async listForPost(
     userId: string,
@@ -73,25 +77,35 @@ export class CommentsService {
 
     const parentId = input.parentId ?? null;
 
-    const comment = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.comment.create({
-        data: { postId, authorId: userId, parentId, content: input.content },
-        include: this.include(userId),
-      });
-      await tx.post.update({
-        where: { id: postId },
-        data: { commentCount: { increment: 1 } },
-      });
-      if (parentId) {
-        await tx.comment.update({
-          where: { id: parentId },
-          data: { replyCount: { increment: 1 } },
+    const { created, post, parent } = await this.prisma.$transaction(
+      async (tx) => {
+        const created = await tx.comment.create({
+          data: { postId, authorId: userId, parentId, content: input.content },
+          include: this.include(userId),
         });
-      }
-      return created;
+        const post = await tx.post.update({
+          where: { id: postId },
+          data: { commentCount: { increment: 1 } },
+        });
+        const parent = parentId
+          ? await tx.comment.update({
+              where: { id: parentId },
+              data: { replyCount: { increment: 1 } },
+            })
+          : null;
+        return { created, post, parent };
+      },
+    );
+
+    this.realtime.publish("comment:created", {
+      commentId: created.id,
+      postId,
+      parentId,
+      postCommentCount: post.commentCount,
+      parentReplyCount: parent?.replyCount ?? null,
     });
 
-    return this.oneToEntity(comment);
+    return this.oneToEntity(created);
   }
 
   async reactors(
@@ -141,18 +155,27 @@ export class CommentsService {
     const comment = await this.getOwnedOrThrow(userId, commentId);
     const removedCount = 1 + comment.replyCount;
 
-    await this.prisma.$transaction(async (tx) => {
+    const { post, parent } = await this.prisma.$transaction(async (tx) => {
       await tx.comment.delete({ where: { id: commentId } });
-      await tx.post.update({
+      const post = await tx.post.update({
         where: { id: comment.postId },
         data: { commentCount: { decrement: removedCount } },
       });
-      if (comment.parentId) {
-        await tx.comment.update({
-          where: { id: comment.parentId },
-          data: { replyCount: { decrement: 1 } },
-        });
-      }
+      const parent = comment.parentId
+        ? await tx.comment.update({
+            where: { id: comment.parentId },
+            data: { replyCount: { decrement: 1 } },
+          })
+        : null;
+      return { post, parent };
+    });
+
+    this.realtime.publish("comment:deleted", {
+      commentId,
+      postId: comment.postId,
+      parentId: comment.parentId,
+      postCommentCount: post.commentCount,
+      parentReplyCount: parent?.replyCount ?? null,
     });
   }
 
@@ -181,7 +204,7 @@ export class CommentsService {
       }
     });
 
-    return this.oneToEntity(await this.fetchWithInclude(userId, commentId));
+    return this.reactionToEntity(userId, commentId);
   }
 
   async unreact(userId: string, commentId: string): Promise<CommentEntity> {
@@ -197,7 +220,24 @@ export class CommentsService {
       }
     });
 
-    return this.oneToEntity(await this.fetchWithInclude(userId, commentId));
+    return this.reactionToEntity(userId, commentId);
+  }
+
+  private async reactionToEntity(
+    userId: string,
+    commentId: string,
+  ): Promise<CommentEntity> {
+    const comment = await this.oneToEntity(
+      await this.fetchWithInclude(userId, commentId),
+    );
+    this.realtime.publish("comment:reaction", {
+      commentId: comment.id,
+      postId: comment.postId,
+      parentId: comment.parentId,
+      likeCount: comment.likeCount,
+      reactionCounts: comment.reactionCounts,
+    });
+    return comment;
   }
 
   private async list(

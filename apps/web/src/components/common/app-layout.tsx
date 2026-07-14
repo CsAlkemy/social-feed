@@ -5,6 +5,7 @@ import { cn } from "@repo/ui";
 import { AppHeader } from "@/components/common/app-header";
 import { ThemeToggle } from "@/components/common/theme-toggle";
 import { useSession } from "@/hooks/use-auth";
+import { useRealtime } from "@/hooks/use-realtime";
 
 export function AppLayout({
   children,
@@ -14,6 +15,7 @@ export function AppLayout({
   fullHeight?: boolean;
 }) {
   const { user } = useSession();
+  useRealtime(Boolean(user));
 
   if (!user) return null;
 

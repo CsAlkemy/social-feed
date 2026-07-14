@@ -11,6 +11,7 @@ import {
 } from "@repo/library";
 import {
   Card,
+  CommonButton,
   CommonDropdown,
   toast,
   UserAvatar,
@@ -85,13 +86,14 @@ export function PostCard({
         </div>
         <CommonDropdown
           trigger={
-            <button
-              type="button"
+            <CommonButton
+              variant="ghost"
+              size="icon"
               aria-label="Post options"
-              className="rounded-md p-2 text-muted-foreground hover:bg-secondary"
+              className="size-8 text-muted-foreground hover:bg-secondary hover:text-muted-foreground"
             >
               <EllipsisVerticalIcon className="size-4" />
-            </button>
+            </CommonButton>
           }
           items={menuItems}
         />

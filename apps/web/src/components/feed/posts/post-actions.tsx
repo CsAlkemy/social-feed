@@ -3,7 +3,7 @@ import { useState } from "react";
 import { MessageSquareIcon, Share2Icon } from "lucide-react";
 
 import type { Post, ReactionType } from "@repo/library";
-import { cn } from "@repo/ui";
+import { CommonButton } from "@repo/ui";
 
 import { ReactionControl } from "@/components/feed/posts/reaction-control";
 import { ReactionListModal } from "@/components/feed/posts/reaction-list-modal";
@@ -11,7 +11,7 @@ import { ReactionSummary } from "@/components/feed/posts/reaction-summary";
 import { ShareModal } from "@/components/feed/posts/share-modal";
 
 const actionButtonClassName =
-  "flex items-center justify-center gap-2 rounded-md py-2 text-sm font-medium transition-colors hover:bg-secondary";
+  "text-muted-foreground hover:bg-secondary hover:text-muted-foreground";
 
 export function PostActions({
   post,
@@ -50,22 +50,24 @@ export function PostActions({
 
       <div className="grid grid-cols-3">
         <ReactionControl reaction={post.viewerReaction} onReact={onReact} variant="post" />
-        <button
-          type="button"
+        <CommonButton
+          variant="ghost"
+          size="sm"
           onClick={onToggleComments}
-          className={cn(actionButtonClassName, "text-muted-foreground")}
+          className={actionButtonClassName}
         >
           <MessageSquareIcon className="size-4" />
           Comment
-        </button>
-        <button
-          type="button"
+        </CommonButton>
+        <CommonButton
+          variant="ghost"
+          size="sm"
           onClick={() => setShowShare(true)}
-          className={cn(actionButtonClassName, "text-muted-foreground")}
+          className={actionButtonClassName}
         >
           <Share2Icon className="size-4" />
           Share
-        </button>
+        </CommonButton>
       </div>
 
       <ReactionListModal

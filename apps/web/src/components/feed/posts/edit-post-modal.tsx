@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ImageIcon } from "lucide-react";
 
 import { PostVisibility, type Post } from "@repo/library";
-import { CommonButton, CommonModal, Textarea, toast } from "@repo/ui";
+import { CommonButton, CommonModal, Label, Textarea, toast } from "@repo/ui";
 
 import { ImageAttachmentGrid } from "@/components/common/image-attachment-grid";
 import { ImagePickerButton } from "@/components/common/image-picker-button";
@@ -111,8 +111,9 @@ export function EditPostModal({
     >
       <div className="grid gap-4">
         <div className="grid gap-2">
-          <span className="text-sm font-medium">Content</span>
+          <Label htmlFor="edit-post-content">Content</Label>
           <Textarea
+            id="edit-post-content"
             value={content}
             onChange={(event) => setContent(event.target.value)}
             rows={4}
@@ -135,7 +136,7 @@ export function EditPostModal({
           </ImagePickerButton>
 
           <div className="grid gap-2">
-            <span className="text-sm font-medium">Visibility</span>
+            <Label>Visibility</Label>
             <VisibilityDropdown
               value={visibility}
               onChange={setVisibility}

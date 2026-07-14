@@ -92,17 +92,23 @@ export function ShareModal({
 
       <div className="mt-4 flex flex-wrap gap-2">
         {SHARE_TARGETS.map((target) => (
-          <a
+          <CommonButton
             key={target.label}
-            href={target.href(url)}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Share on ${target.label}`}
-            title={target.label}
-            className="flex size-10 items-center justify-center rounded-full border border-input text-foreground transition-colors hover:bg-secondary"
+            asChild
+            variant="ghost"
+            size="icon"
+            className="rounded-full border border-input text-foreground hover:bg-secondary hover:text-foreground [&_svg]:size-5"
           >
-            <target.icon className="size-5" />
-          </a>
+            <a
+              href={target.href(url)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Share on ${target.label}`}
+              title={target.label}
+            >
+              <target.icon className="size-5" />
+            </a>
+          </CommonButton>
         ))}
       </div>
     </CommonModal>

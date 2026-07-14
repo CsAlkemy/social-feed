@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 
+import { eventFormSchema, type EventFormInput } from "@repo/library";
 import {
   CommonButton,
   CommonInput,
@@ -15,15 +15,6 @@ import {
 import { ImagePicker } from "@/components/common/image-picker";
 import { useCreateEvent } from "@/hooks/use-events";
 import { uploadEventImage } from "@/lib/upload";
-
-const eventFormSchema = z.object({
-  title: z.string().trim().min(1, "Give your event a title").max(120),
-  startsAt: z.string().min(1, "Pick a date and time"),
-  location: z.string().trim().max(200),
-  description: z.string().trim().max(2000),
-});
-
-type EventFormInput = z.infer<typeof eventFormSchema>;
 
 const EMPTY_FORM: EventFormInput = {
   title: "",
@@ -40,7 +31,7 @@ export function CreateEventModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const createEvent = useCreateEvent();
 
   const { control, handleSubmit, reset } = useForm<EventFormInput>({
@@ -56,28 +47,44 @@ export function CreateEventModal({
     onOpenChange(next);
   };
 
+  const isSubmitting = isUploading || createEvent.isPending;
+
   const onSubmit = handleSubmit(async (values) => {
     if (isSubmitting) return;
 
-    setIsSubmitting(true);
-    try {
-      const coverUrl = file ? await uploadEventImage(file) : undefined;
-      await createEvent.mutateAsync({
+    let coverUrl: string | undefined;
+    if (file) {
+      setIsUploading(true);
+      try {
+        coverUrl = await uploadEventImage(file);
+      } catch (error) {
+        toast.error(
+          error instanceof Error ? error.message : "Unable to upload the cover photo",
+        );
+        return;
+      } finally {
+        setIsUploading(false);
+      }
+    }
+
+    createEvent.mutate(
+      {
         title: values.title,
         description: values.description || undefined,
         location: values.location || undefined,
         coverUrl,
         startsAt: new Date(values.startsAt).toISOString(),
-      });
-      toast.success("Event created");
-      handleOpenChange(false);
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Unable to create the event",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+      {
+        onSuccess: () => {
+          toast.success("Event created");
+          handleOpenChange(false);
+        },
+        onError: (error) => {
+          toast.error(error.message || "Unable to create the event");
+        },
+      },
+    );
   });
 
   return (
@@ -132,7 +139,6 @@ export function CreateEventModal({
           placeholder="Tell people what to expect"
           rows={3}
         />
-
       </form>
     </CommonModal>
   );

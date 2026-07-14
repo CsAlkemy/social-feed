@@ -3,6 +3,7 @@ import { useState } from "react";
 import { formatRelativeTime, type Comment, type User } from "@repo/library";
 import { CommentSkeleton, UserAvatar } from "@repo/ui";
 
+import { LoadMoreButton } from "@/components/common/load-more-button";
 import { PostCommentBox } from "@/components/feed/posts/post-comment-box";
 import { ReactionControl } from "@/components/feed/posts/reaction-control";
 import { ReactionListModal } from "@/components/feed/posts/reaction-list-modal";
@@ -104,14 +105,13 @@ export function CommentItem({
               ))
             )}
             {replies.hasNextPage ? (
-              <button
-                type="button"
-                disabled={replies.isFetchingNextPage}
+              <LoadMoreButton
+                loading={replies.isFetchingNextPage}
                 onClick={() => void replies.fetchNextPage()}
-                className="text-xs font-medium text-primary"
+                className="text-xs"
               >
-                {replies.isFetchingNextPage ? "Loading…" : "Load more replies"}
-              </button>
+                Load more replies
+              </LoadMoreButton>
             ) : null}
           </div>
         ) : null}

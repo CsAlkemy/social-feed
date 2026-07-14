@@ -1,12 +1,8 @@
-import Image from "next/image";
-import { useRef, useState, type ChangeEvent } from "react";
+import { useState } from "react";
 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { ImageIcon, XIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-import { UPLOAD_IMAGE_ACCEPT } from "@repo/library";
 
 import {
   CommonButton,
@@ -16,6 +12,7 @@ import {
   toast,
 } from "@repo/ui";
 
+import { ImagePicker } from "@/components/common/image-picker";
 import { useCreateEvent } from "@/hooks/use-events";
 import { uploadEventImage } from "@/lib/upload";
 
@@ -43,9 +40,7 @@ export function CreateEventModal({
   onOpenChange: (open: boolean) => void;
 }) {
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const createEvent = useCreateEvent();
 
   const { control, handleSubmit, reset } = useForm<EventFormInput>({
@@ -53,27 +48,12 @@ export function CreateEventModal({
     defaultValues: EMPTY_FORM,
   });
 
-  const clearImage = () => {
-    if (preview) URL.revokeObjectURL(preview);
-    setFile(null);
-    setPreview(null);
-  };
-
   const handleOpenChange = (next: boolean) => {
     if (!next) {
-      clearImage();
+      setFile(null);
       reset(EMPTY_FORM);
     }
     onOpenChange(next);
-  };
-
-  const handleSelect = (event: ChangeEvent<HTMLInputElement>) => {
-    const selected = event.target.files?.[0];
-    if (!selected) return;
-    clearImage();
-    setFile(selected);
-    setPreview(URL.createObjectURL(selected));
-    event.target.value = "";
   };
 
   const onSubmit = handleSubmit(async (values) => {
@@ -118,28 +98,14 @@ export function CreateEventModal({
       }
     >
       <form onSubmit={onSubmit} className="grid gap-4" noValidate>
-        {preview ? (
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-            <Image src={preview} alt="Event cover preview" fill unoptimized className="object-cover" />
-            <button
-              type="button"
-              aria-label="Remove cover photo"
-              onClick={clearImage}
-              className="absolute right-2 top-2 rounded-full bg-black/60 p-1 text-white transition-colors hover:bg-black/80"
-            >
-              <XIcon className="size-4" />
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-          >
-            <ImageIcon className="size-8" />
-            <span className="text-sm font-medium">Add a cover photo (optional)</span>
-          </button>
-        )}
+        <ImagePicker
+          file={file}
+          onChange={setFile}
+          label="Add a cover photo (optional)"
+          alt="Event cover preview"
+          className="aspect-video w-full"
+          imageClassName="object-cover"
+        />
 
         <CommonInput
           control={control}
@@ -167,15 +133,6 @@ export function CreateEventModal({
           rows={3}
         />
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={UPLOAD_IMAGE_ACCEPT}
-          onChange={handleSelect}
-          className="hidden"
-          aria-hidden
-          tabIndex={-1}
-        />
       </form>
     </CommonModal>
   );

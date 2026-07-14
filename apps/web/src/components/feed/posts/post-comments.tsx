@@ -1,6 +1,7 @@
 import type { User } from "@repo/library";
 import { CommentSkeleton } from "@repo/ui";
 
+import { LoadMoreButton } from "@/components/common/load-more-button";
 import { CommentItem } from "@/components/feed/posts/comment-item";
 import { useComments } from "@/hooks/use-comments";
 
@@ -37,14 +38,13 @@ export function PostComments({ postId, viewer }: { postId: string; viewer: User 
         <CommentItem key={comment.id} postId={postId} comment={comment} viewer={viewer} />
       ))}
       {comments.hasNextPage ? (
-        <button
-          type="button"
-          disabled={comments.isFetchingNextPage}
+        <LoadMoreButton
+          loading={comments.isFetchingNextPage}
           onClick={() => void comments.fetchNextPage()}
-          className="text-xs font-medium text-primary"
+          className="text-xs"
         >
-          {comments.isFetchingNextPage ? "Loading…" : "Load more comments"}
-        </button>
+          Load more comments
+        </LoadMoreButton>
       ) : null}
     </div>
   );

@@ -1,7 +1,7 @@
-import Head from "next/head";
 import { useRouter } from "next/router";
 
 import { AppLayout } from "@/components/common/app-layout";
+import { PageTitle } from "@/components/common/page-title";
 import { PostPermalink } from "@/components/feed/posts/post-permalink";
 import type { NextPageWithLayout } from "@/pages/_app";
 
@@ -11,9 +11,7 @@ const PostPage: NextPageWithLayout = () => {
 
   return (
     <>
-      <Head>
-        <title>Post | Appifylab Social</title>
-      </Head>
+      <PageTitle title="Post" />
       {id ? <PostPermalink id={id} /> : null}
     </>
   );

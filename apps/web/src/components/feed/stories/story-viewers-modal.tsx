@@ -1,6 +1,7 @@
 import { formatRelativeTime } from "@repo/library";
 import { CommonModal, Spinner, UserAvatar } from "@repo/ui";
 
+import { LoadMoreButton } from "@/components/common/load-more-button";
 import { useStoryViewers } from "@/hooks/use-stories";
 
 export function StoryViewersModal({
@@ -47,14 +48,11 @@ export function StoryViewersModal({
               );
             })}
             {viewers.hasNextPage ? (
-              <button
-                type="button"
-                disabled={viewers.isFetchingNextPage}
+              <LoadMoreButton
+                loading={viewers.isFetchingNextPage}
                 onClick={() => void viewers.fetchNextPage()}
-                className="w-full py-2 text-sm font-medium text-primary"
-              >
-                {viewers.isFetchingNextPage ? "Loading…" : "Load more"}
-              </button>
+                className="w-full py-2 text-sm"
+              />
             ) : null}
           </>
         )}

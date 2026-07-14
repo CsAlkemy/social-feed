@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ReactionType } from "@repo/library";
 import { cn, CommonModal, Spinner, UserAvatar } from "@repo/ui";
 
+import { LoadMoreButton } from "@/components/common/load-more-button";
 import { REACTION_BY_TYPE, topReactions } from "@/components/feed/reaction-config";
 import { useReactors } from "@/hooks/use-posts";
 
@@ -84,14 +85,11 @@ export function ReactionListModal({
               );
             })}
             {reactors.hasNextPage ? (
-              <button
-                type="button"
-                disabled={reactors.isFetchingNextPage}
+              <LoadMoreButton
+                loading={reactors.isFetchingNextPage}
                 onClick={() => void reactors.fetchNextPage()}
-                className="w-full py-2 text-sm font-medium text-primary"
-              >
-                {reactors.isFetchingNextPage ? "Loading…" : "Load more"}
-              </button>
+                className="w-full py-2 text-sm"
+              />
             ) : null}
           </>
         )}

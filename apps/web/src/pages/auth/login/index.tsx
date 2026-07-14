@@ -1,12 +1,10 @@
-import Head from "next/head";
 import { LoginView } from "@/components/auth/login";
+import { PageTitle } from "@/components/common/page-title";
 
 export default function LoginPage() {
   return (
     <>
-      <Head>
-        <title>Login | Appifylab Social</title>
-      </Head>
+      <PageTitle title="Login" />
       <LoginView />
     </>
   );

@@ -1,15 +1,12 @@
-import Head from "next/head";
-
 import { AppLayout } from "@/components/common/app-layout";
+import { PageTitle } from "@/components/common/page-title";
 import { EventsView } from "@/components/events/events-view";
 import type { NextPageWithLayout } from "@/pages/_app";
 
 const EventsPage: NextPageWithLayout = () => {
   return (
     <>
-      <Head>
-        <title>Events | Appifylab Social</title>
-      </Head>
+      <PageTitle title="Events" />
       <EventsView />
     </>
   );

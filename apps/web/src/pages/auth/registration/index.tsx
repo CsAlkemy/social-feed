@@ -1,12 +1,10 @@
 import { RegistrationComponent } from "@/components/auth/registration";
-import Head from "next/head";
+import { PageTitle } from "@/components/common/page-title";
 
 export default function RegistrationPage() {
   return (
     <>
-      <Head>
-        <title>Registration | Appifylab Social</title>
-      </Head>
+      <PageTitle title="Registration" />
       <RegistrationComponent />
     </>
   );

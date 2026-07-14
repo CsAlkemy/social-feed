@@ -49,7 +49,7 @@ export default function App({ Component, pageProps }: AppPropsWithLayout) {
     });
 
     configureApi({
-      baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api",
+      baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "https://buddy-script-api.up.railway.app/api",
       refreshPath: "/auth/refresh",
       onUnauthorized: () => {
         setAuthHint(false);

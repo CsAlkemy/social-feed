@@ -13,12 +13,15 @@ import {
   type Reactor,
   type ReactorQuery,
   type UpdatePostInput,
-  type User as UserEntity,
 } from "@repo/library";
 
-import { Prisma, type User } from "../generated/prisma/client";
+import { toUserEntity } from "../common/mappers";
+import { cursorArgs, slicePage } from "../common/pagination";
+import { reactionCountMap, type ReactionCounts } from "../common/reactions";
+import { Prisma } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { RealtimeGateway } from "../realtime/realtime.gateway";
+import { isPostVisibleTo, postVisibleWhere } from "./post-visibility";
 
 type PostWithRelations = Prisma.PostGetPayload<{
   include: {
@@ -27,8 +30,6 @@ type PostWithRelations = Prisma.PostGetPayload<{
     savedBy: { select: { id: true } };
   };
 }>;
-
-type ReactionCounts = Partial<Record<ReactionType, number>>;
 
 @Injectable()
 export class PostsService {
@@ -52,24 +53,19 @@ export class PostsService {
   }
 
   async feed(userId: string, query: CursorQuery): Promise<Page<PostEntity>> {
-    const take = query.limit + 1;
     const rows = await this.prisma.post.findMany({
-      where: {
-        OR: [{ visibility: PostVisibility.PUBLIC }, { authorId: userId }],
-      },
+      where: postVisibleWhere(userId),
       include: this.include(userId),
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
-    const hasMore = rows.length > query.limit;
-    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const { items, nextCursor } = slicePage(rows, query.limit);
     const counts = await this.reactionCounts(items.map((row) => row.id));
 
     return {
       items: items.map((row) => this.toPostEntity(row, counts.get(row.id) ?? {})),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      nextCursor,
     };
   }
 
@@ -78,45 +74,38 @@ export class PostsService {
   }
 
   async saved(userId: string, query: CursorQuery): Promise<Page<PostEntity>> {
-    const take = query.limit + 1;
     const rows = await this.prisma.savedPost.findMany({
-      where: {
-        userId,
-        post: {
-          OR: [{ visibility: PostVisibility.PUBLIC }, { authorId: userId }],
-        },
-      },
+      where: { userId, post: postVisibleWhere(userId) },
       include: { post: { include: this.include(userId) } },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
-    const hasMore = rows.length > query.limit;
-    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const { items, nextCursor } = slicePage(rows, query.limit);
     const counts = await this.reactionCounts(items.map((row) => row.postId));
 
     return {
       items: items.map((row) =>
         this.toPostEntity(row.post, counts.get(row.postId) ?? {}),
       ),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      nextCursor,
     };
   }
 
   async save(userId: string, postId: string): Promise<PostEntity> {
-    await this.getVisibleOrThrow(userId, postId);
+    const post = await this.fetchVisible(userId, postId);
     await this.prisma.savedPost.upsert({
       where: { userId_postId: { userId, postId } },
       create: { userId, postId },
       update: {},
     });
-    return this.oneToEntity(await this.fetchVisible(userId, postId));
+    return { ...(await this.oneToEntity(post)), viewerSaved: true };
   }
 
   async unsave(userId: string, postId: string): Promise<PostEntity> {
+    const post = await this.fetchVisible(userId, postId);
     await this.prisma.savedPost.deleteMany({ where: { userId, postId } });
-    return this.oneToEntity(await this.fetchVisible(userId, postId));
+    return { ...(await this.oneToEntity(post)), viewerSaved: false };
   }
 
   async reactors(
@@ -126,23 +115,20 @@ export class PostsService {
   ): Promise<Page<Reactor>> {
     await this.getVisibleOrThrow(userId, postId);
 
-    const take = query.limit + 1;
     const rows = await this.prisma.postLike.findMany({
       where: { postId, ...(query.type ? { type: query.type } : {}) },
       include: { user: true },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
-    const hasMore = rows.length > query.limit;
-    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const { items, nextCursor } = slicePage(rows, query.limit);
     return {
       items: items.map((row) => ({
-        user: this.toUserEntity(row.user),
+        user: toUserEntity(row.user),
         type: row.type as ReactionType,
       })),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      nextCursor,
     };
   }
 
@@ -192,16 +178,12 @@ export class PostsService {
   }
 
   async unreact(userId: string, postId: string): Promise<PostEntity> {
+    await this.getVisibleOrThrow(userId, postId);
+
     await this.prisma.$transaction(async (tx) => {
-      const { count } = await tx.postLike.deleteMany({
-        where: { postId, userId },
-      });
-      if (count > 0) {
-        await tx.post.update({
-          where: { id: postId },
-          data: { likeCount: { decrement: 1 } },
-        });
-      }
+      await tx.postLike.deleteMany({ where: { postId, userId } });
+      const likeCount = await tx.postLike.count({ where: { postId } });
+      await tx.post.update({ where: { id: postId }, data: { likeCount } });
     });
 
     return this.reactionToEntity(userId, postId);
@@ -233,8 +215,7 @@ export class PostsService {
   private async reactionCounts(
     postIds: string[],
   ): Promise<Map<string, ReactionCounts>> {
-    const map = new Map<string, ReactionCounts>();
-    if (postIds.length === 0) return map;
+    if (postIds.length === 0) return new Map();
 
     const groups = await this.prisma.postLike.groupBy({
       by: ["postId", "type"],
@@ -242,24 +223,18 @@ export class PostsService {
       _count: { _all: true },
     });
 
-    for (const group of groups) {
-      const entry = map.get(group.postId) ?? {};
-      entry[group.type as ReactionType] = group._count._all;
-      map.set(group.postId, entry);
-    }
-    return map;
+    return reactionCountMap(
+      groups.map((group) => ({
+        id: group.postId,
+        type: group.type,
+        count: group._count._all,
+      })),
+    );
   }
 
   private async oneToEntity(post: PostWithRelations): Promise<PostEntity> {
     const counts = await this.reactionCounts([post.id]);
     return this.toPostEntity(post, counts.get(post.id) ?? {});
-  }
-
-  private isVisibleTo(
-    post: { visibility: string; authorId: string },
-    userId: string,
-  ): boolean {
-    return post.visibility === PostVisibility.PUBLIC || post.authorId === userId;
   }
 
   private async fetchVisible(
@@ -270,7 +245,7 @@ export class PostsService {
       where: { id: postId },
       include: this.include(userId),
     });
-    if (!post || !this.isVisibleTo(post, userId)) {
+    if (!post || !isPostVisibleTo(post, userId)) {
       throw new NotFoundException("Post not found");
     }
     return post;
@@ -287,7 +262,7 @@ export class PostsService {
 
   private async getVisibleOrThrow(userId: string, postId: string) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
-    if (!post || !this.isVisibleTo(post, userId)) {
+    if (!post || !isPostVisibleTo(post, userId)) {
       throw new NotFoundException("Post not found");
     }
     return post;
@@ -302,7 +277,7 @@ export class PostsService {
       content: post.content,
       imageUrls: post.imageUrls,
       visibility: post.visibility as PostVisibility,
-      author: this.toUserEntity(post.author),
+      author: toUserEntity(post.author),
       likeCount: post.likeCount,
       reactionCounts,
       viewerReaction: (post.likes[0]?.type as ReactionType | undefined) ?? null,
@@ -310,17 +285,6 @@ export class PostsService {
       commentCount: post.commentCount,
       shareCount: post.shareCount,
       createdAt: post.createdAt.toISOString(),
-    };
-  }
-
-  private toUserEntity(user: User): UserEntity {
-    return {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt.toISOString(),
     };
   }
 }

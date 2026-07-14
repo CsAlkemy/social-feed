@@ -10,10 +10,11 @@ import {
   type Story as StoryEntity,
   type StoryGroup,
   type StoryViewer,
-  type User as UserEntity,
 } from "@repo/library";
 
-import { Prisma, type User } from "../generated/prisma/client";
+import { toUserEntity } from "../common/mappers";
+import { cursorArgs, slicePage } from "../common/pagination";
+import { Prisma } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 const STORY_TTL_MS = 24 * 60 * 60 * 1000;
@@ -97,23 +98,20 @@ export class StoriesService {
   ): Promise<Page<StoryViewer>> {
     await this.getOwnedOrThrow(userId, storyId);
 
-    const take = query.limit + 1;
     const rows = await this.prisma.storyView.findMany({
       where: { storyId },
       include: { viewer: true },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
-    const hasMore = rows.length > query.limit;
-    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const { items, nextCursor } = slicePage(rows, query.limit);
     return {
       items: items.map((row) => ({
-        user: this.toUserEntity(row.viewer),
+        user: toUserEntity(row.viewer),
         viewedAt: row.createdAt.toISOString(),
       })),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      nextCursor,
     };
   }
 
@@ -167,24 +165,13 @@ export class StoriesService {
   private toEntity(story: StoryWithRelations, viewerCount: number): StoryEntity {
     return {
       id: story.id,
-      author: this.toUserEntity(story.author),
+      author: toUserEntity(story.author),
       imageUrl: story.imageUrl,
       caption: story.caption,
       viewed: story.views.length > 0,
       viewerCount,
       createdAt: story.createdAt.toISOString(),
       expiresAt: story.expiresAt.toISOString(),
-    };
-  }
-
-  private toUserEntity(user: User): UserEntity {
-    return {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt.toISOString(),
     };
   }
 }

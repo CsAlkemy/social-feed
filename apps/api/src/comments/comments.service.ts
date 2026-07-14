@@ -14,18 +14,19 @@ import {
   type Reactor,
   type ReactorQuery,
   type UpdateCommentInput,
-  type User as UserEntity,
 } from "@repo/library";
 
-import { Prisma, type User } from "../generated/prisma/client";
+import { toUserEntity } from "../common/mappers";
+import { cursorArgs, slicePage } from "../common/pagination";
+import { reactionCountMap, type ReactionCounts } from "../common/reactions";
+import { Prisma } from "../generated/prisma/client";
+import { isPostVisibleTo } from "../posts/post-visibility";
 import { PrismaService } from "../prisma/prisma.service";
 import { RealtimeGateway } from "../realtime/realtime.gateway";
 
 type CommentWithRelations = Prisma.CommentGetPayload<{
   include: { author: true; likes: { select: { id: true; type: true } } };
 }>;
-
-type ReactionCounts = Partial<Record<ReactionType, number>>;
 
 @Injectable()
 export class CommentsService {
@@ -117,23 +118,20 @@ export class CommentsService {
   ): Promise<Page<Reactor>> {
     await this.getVisibleCommentOrThrow(userId, commentId);
 
-    const take = query.limit + 1;
     const rows = await this.prisma.commentLike.findMany({
       where: { commentId, ...(query.type ? { type: query.type } : {}) },
       include: { user: true },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
-    const hasMore = rows.length > query.limit;
-    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const { items, nextCursor } = slicePage(rows, query.limit);
     return {
       items: items.map((row) => ({
-        user: this.toUserEntity(row.user),
+        user: toUserEntity(row.user),
         type: row.type as ReactionType,
       })),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      nextCursor,
     };
   }
 
@@ -204,16 +202,12 @@ export class CommentsService {
   }
 
   async unreact(userId: string, commentId: string): Promise<CommentEntity> {
+    await this.getVisibleCommentOrThrow(userId, commentId);
+
     await this.prisma.$transaction(async (tx) => {
-      const { count } = await tx.commentLike.deleteMany({
-        where: { commentId, userId },
-      });
-      if (count > 0) {
-        await tx.comment.update({
-          where: { id: commentId },
-          data: { likeCount: { decrement: 1 } },
-        });
-      }
+      await tx.commentLike.deleteMany({ where: { commentId, userId } });
+      const likeCount = await tx.commentLike.count({ where: { commentId } });
+      await tx.comment.update({ where: { id: commentId }, data: { likeCount } });
     });
 
     return this.reactionToEntity(userId, commentId);
@@ -223,14 +217,14 @@ export class CommentsService {
     userId: string,
     commentId: string,
   ): Promise<CommentEntity> {
-    const comment = await this.oneToEntity(
-      await this.fetchWithInclude(userId, commentId),
-    );
-    const post = await this.prisma.post.findUnique({
-      where: { id: comment.postId },
-      select: { visibility: true },
+    const row = await this.prisma.comment.findUnique({
+      where: { id: commentId },
+      include: { ...this.include(userId), post: { select: { visibility: true } } },
     });
-    if (post?.visibility === PostVisibility.PUBLIC) {
+    if (!row) throw new NotFoundException("Comment not found");
+
+    const comment = await this.oneToEntity(row);
+    if (row.post.visibility === PostVisibility.PUBLIC) {
       this.realtime.publish("comment:reaction", {
         commentId: comment.id,
         postId: comment.postId,
@@ -247,24 +241,21 @@ export class CommentsService {
     where: Prisma.CommentWhereInput,
     query: CursorQuery,
   ): Promise<Page<CommentEntity>> {
-    const take = query.limit + 1;
     const rows = await this.prisma.comment.findMany({
       where,
       include: this.include(userId),
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      take,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
-    const hasMore = rows.length > query.limit;
-    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const { items, nextCursor } = slicePage(rows, query.limit);
     const counts = await this.reactionCounts(items.map((row) => row.id));
 
     return {
       items: items.map((row) =>
         this.toCommentEntity(row, counts.get(row.id) ?? {}),
       ),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      nextCursor,
     };
   }
 
@@ -278,8 +269,7 @@ export class CommentsService {
   private async reactionCounts(
     commentIds: string[],
   ): Promise<Map<string, ReactionCounts>> {
-    const map = new Map<string, ReactionCounts>();
-    if (commentIds.length === 0) return map;
+    if (commentIds.length === 0) return new Map();
 
     const groups = await this.prisma.commentLike.groupBy({
       by: ["commentId", "type"],
@@ -287,12 +277,13 @@ export class CommentsService {
       _count: { _all: true },
     });
 
-    for (const group of groups) {
-      const entry = map.get(group.commentId) ?? {};
-      entry[group.type as ReactionType] = group._count._all;
-      map.set(group.commentId, entry);
-    }
-    return map;
+    return reactionCountMap(
+      groups.map((group) => ({
+        id: group.commentId,
+        type: group.type,
+        count: group._count._all,
+      })),
+    );
   }
 
   private async oneToEntity(
@@ -302,24 +293,9 @@ export class CommentsService {
     return this.toCommentEntity(comment, counts.get(comment.id) ?? {});
   }
 
-  private async fetchWithInclude(
-    userId: string,
-    commentId: string,
-  ): Promise<CommentWithRelations> {
-    const comment = await this.prisma.comment.findUnique({
-      where: { id: commentId },
-      include: this.include(userId),
-    });
-    if (!comment) throw new NotFoundException("Comment not found");
-    return comment;
-  }
-
   private async getVisiblePostOrThrow(userId: string, postId: string) {
     const post = await this.prisma.post.findUnique({ where: { id: postId } });
-    if (
-      !post ||
-      (post.visibility !== PostVisibility.PUBLIC && post.authorId !== userId)
-    ) {
+    if (!post || !isPostVisibleTo(post, userId)) {
       throw new NotFoundException("Post not found");
     }
     return post;
@@ -354,24 +330,13 @@ export class CommentsService {
       postId: comment.postId,
       parentId: comment.parentId,
       content: comment.content,
-      author: this.toUserEntity(comment.author),
+      author: toUserEntity(comment.author),
       likeCount: comment.likeCount,
       reactionCounts,
       viewerReaction:
         (comment.likes[0]?.type as ReactionType | undefined) ?? null,
       replyCount: comment.replyCount,
       createdAt: comment.createdAt.toISOString(),
-    };
-  }
-
-  private toUserEntity(user: User): UserEntity {
-    return {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt.toISOString(),
     };
   }
 }

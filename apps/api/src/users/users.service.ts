@@ -9,8 +9,10 @@ import {
   type User as UserEntity,
 } from "@repo/library";
 
-import { FriendshipStatus, Prisma, type User } from "../generated/prisma/client";
+import { toMember, toUserEntity } from "../common/mappers";
+import { cursorArgs, slicePage } from "../common/pagination";
 import { friendStatusMap } from "../friends/friend-status";
+import { FriendshipStatus, Prisma, type User } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
@@ -32,7 +34,7 @@ export class UsersService {
         },
       });
 
-      return this.toUserEntity(user);
+      return toUserEntity(user);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -48,22 +50,15 @@ export class UsersService {
 
   async listMembers(userId: string, query: MemberQuery): Promise<Page<Member>> {
     const search = query.search?.trim();
-    const friendships = await this.prisma.friendship.findMany({
-      where: {
-        status: FriendshipStatus.ACCEPTED,
-        OR: [{ requesterId: userId }, { addresseeId: userId }],
-      },
-      select: { requesterId: true, addresseeId: true },
-    });
-    const excludeIds = friendships.map((friendship) =>
-      friendship.requesterId === userId
-        ? friendship.addresseeId
-        : friendship.requesterId,
-    );
-
     const rows = await this.prisma.user.findMany({
       where: {
-        id: { notIn: [userId, ...excludeIds] },
+        id: { not: userId },
+        sentFriendRequests: {
+          none: { addresseeId: userId, status: FriendshipStatus.ACCEPTED },
+        },
+        receivedFriendRequests: {
+          none: { requesterId: userId, status: FriendshipStatus.ACCEPTED },
+        },
         ...(search
           ? {
               OR: [
@@ -75,8 +70,7 @@ export class UsersService {
           : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
     return this.toMemberPage(userId, rows, query.limit);
@@ -86,29 +80,20 @@ export class UsersService {
     userId: string,
     query: CursorQuery,
   ): Promise<Page<Member>> {
-    const related = await this.prisma.friendship.findMany({
-      where: { OR: [{ requesterId: userId }, { addresseeId: userId }] },
-      select: { requesterId: true, addresseeId: true },
-    });
-
-    const excludeIds = new Set<string>([userId]);
-    for (const friendship of related) {
-      excludeIds.add(friendship.requesterId);
-      excludeIds.add(friendship.addresseeId);
-    }
-
     const rows = await this.prisma.user.findMany({
-      where: { id: { notIn: [...excludeIds] } },
+      where: {
+        id: { not: userId },
+        sentFriendRequests: { none: { addresseeId: userId } },
+        receivedFriendRequests: { none: { requesterId: userId } },
+      },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: query.limit + 1,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
-    const hasMore = rows.length > query.limit;
-    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const { items, nextCursor } = slicePage(rows, query.limit);
     return {
-      items: items.map((user) => this.toMember(user, FriendStatus.NONE)),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      items: items.map((user) => toMember(user, FriendStatus.NONE)),
+      nextCursor,
     };
   }
 
@@ -117,8 +102,7 @@ export class UsersService {
     rows: User[],
     limit: number,
   ): Promise<Page<Member>> {
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
+    const { items, nextCursor } = slicePage(rows, limit);
     const ids = items.map((user) => user.id);
 
     const friendships = await this.prisma.friendship.findMany({
@@ -133,24 +117,9 @@ export class UsersService {
 
     return {
       items: items.map((user) =>
-        this.toMember(user, statuses.get(user.id) ?? FriendStatus.NONE),
+        toMember(user, statuses.get(user.id) ?? FriendStatus.NONE),
       ),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
-    };
-  }
-
-  private toMember(user: User, friendStatus: FriendStatus): Member {
-    return { ...this.toUserEntity(user), friendStatus };
-  }
-
-  private toUserEntity(user: User): UserEntity {
-    return {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt.toISOString(),
+      nextCursor,
     };
   }
 }

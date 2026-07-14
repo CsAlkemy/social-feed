@@ -51,6 +51,8 @@ import { UsersService } from "./users.service";
 const AVATAR_MAX_BYTES = 5 * 1024 * 1024;
 
 @ApiTags("users")
+@ApiBearerAuth("access-token")
+@ApiUnauthorizedResponse({ description: "Missing or expired access token" })
 @Controller("users")
 export class UsersController {
   constructor(
@@ -59,8 +61,6 @@ export class UsersController {
   ) {}
 
   @ApiOperation({ summary: "List platform members (cursor-paginated)" })
-  @ApiBearerAuth("access-token")
-  @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
   @ApiOkResponse({ schema: pageSchema(MEMBER_SCHEMA) })
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -72,8 +72,6 @@ export class UsersController {
   }
 
   @ApiOperation({ summary: "People you may know" })
-  @ApiBearerAuth("access-token")
-  @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
   @ApiOkResponse({ schema: pageSchema(MEMBER_SCHEMA) })
   @UseGuards(JwtAuthGuard)
   @Get("suggestions")
@@ -85,13 +83,11 @@ export class UsersController {
   }
 
   @ApiOperation({ summary: "Update the signed-in user's profile" })
-  @ApiBearerAuth("access-token")
   @ApiBody({ schema: zodToOpenApi(updateProfileSchema) })
   @ApiOkResponse({
     schema: { type: "object", properties: { user: USER_SCHEMA } },
   })
   @ApiBadRequestResponse({ schema: VALIDATION_ERROR_SCHEMA })
-  @ApiUnauthorizedResponse({ description: "Missing or expired access token" })
   @ApiConflictResponse({ description: "Email already registered" })
   @UseGuards(JwtAuthGuard)
   @Patch("me")

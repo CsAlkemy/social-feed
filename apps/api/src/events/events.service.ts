@@ -4,10 +4,11 @@ import type {
   CursorQuery,
   Event as EventEntity,
   Page,
-  User as UserEntity,
 } from "@repo/library";
 
-import { Prisma, type User } from "../generated/prisma/client";
+import { toUserEntity } from "../common/mappers";
+import { cursorArgs, slicePage } from "../common/pagination";
+import { Prisma } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 type EventWithRelations = Prisma.EventGetPayload<{
@@ -42,21 +43,17 @@ export class EventsService {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const take = query.limit + 1;
     const rows = await this.prisma.event.findMany({
       where: { startsAt: { gte: startOfToday } },
       include: this.include(userId),
       orderBy: [{ startsAt: "asc" }, { id: "asc" }],
-      take,
-      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+      ...cursorArgs(query),
     });
 
-    const hasMore = rows.length > query.limit;
-    const items = hasMore ? rows.slice(0, query.limit) : rows;
-
+    const { items, nextCursor } = slicePage(rows, query.limit);
     return {
       items: items.map((row) => this.toEventEntity(row)),
-      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+      nextCursor,
     };
   }
 
@@ -108,21 +105,10 @@ export class EventsService {
       location: event.location,
       coverUrl: event.coverUrl,
       startsAt: event.startsAt.toISOString(),
-      creator: this.toUserEntity(event.creator),
+      creator: toUserEntity(event.creator),
       goingCount: event._count.attendees,
       viewerGoing: event.attendees.length > 0,
       createdAt: event.createdAt.toISOString(),
-    };
-  }
-
-  private toUserEntity(user: User): UserEntity {
-    return {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt.toISOString(),
     };
   }
 }

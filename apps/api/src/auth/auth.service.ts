@@ -14,6 +14,7 @@ import type {
 } from "@repo/library";
 import bcrypt from "bcryptjs";
 
+import { toUserEntity } from "../common/mappers";
 import type { Env } from "../config/env";
 import { Prisma, type User } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
@@ -60,7 +61,7 @@ export class AuthService {
       });
 
       return {
-        user: this.toUserEntity(user),
+        user: toUserEntity(user),
         tokens: await this.issueTokens(user),
       };
     } catch (error) {
@@ -91,7 +92,7 @@ export class AuthService {
     }
 
     return {
-      user: this.toUserEntity(user),
+      user: toUserEntity(user),
       tokens: await this.issueTokens(user),
     };
   }
@@ -119,7 +120,7 @@ export class AuthService {
     }
 
     return {
-      user: this.toUserEntity(stored.user),
+      user: toUserEntity(stored.user),
       tokens: await this.issueTokens(stored.user, stored.id),
     };
   }
@@ -138,7 +139,7 @@ export class AuthService {
       throw new UnauthorizedException("Account no longer exists");
     }
 
-    return this.toUserEntity(user);
+    return toUserEntity(user);
   }
 
   private async issueTokens(
@@ -180,16 +181,5 @@ export class AuthService {
 
   private hashToken(token: string): string {
     return createHash("sha256").update(token).digest("hex");
-  }
-
-  private toUserEntity(user: User): UserEntity {
-    return {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
-      createdAt: user.createdAt.toISOString(),
-    };
   }
 }

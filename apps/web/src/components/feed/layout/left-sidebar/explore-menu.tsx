@@ -1,10 +1,10 @@
 import Link from "next/link";
 import {
   BookmarkIcon,
+  CalendarDaysIcon,
   ChartColumnIcon,
   CirclePlayIcon,
   Gamepad2Icon,
-  SaveIcon,
   SettingsIcon,
   UserPlusIcon,
   UsersIcon,
@@ -23,12 +23,12 @@ type MenuItem = {
 const MENU_ITEMS: MenuItem[] = [
   { label: "Learning", icon: CirclePlayIcon, soon: true },
   { label: "Insights", icon: ChartColumnIcon, soon: true },
-  { label: "Find friends", icon: UserPlusIcon, href: "/members" },
-  { label: "Bookmarks", icon: BookmarkIcon, soon: true },
+  { label: "Find friends", icon: UserPlusIcon, href: "/members?tab=discover" },
+  { label: "Saved Posts", icon: BookmarkIcon, href: "/saved" },
+  { label: "Events", icon: CalendarDaysIcon, href: "/events" },
   { label: "Group", icon: UsersIcon, soon: true },
   { label: "Gaming", icon: Gamepad2Icon, soon: true },
   { label: "Settings", icon: SettingsIcon, soon: true },
-  { label: "Save post", icon: SaveIcon, soon: true },
 ];
 
 const ROW_CLASS =

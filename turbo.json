@@ -5,6 +5,7 @@
     "NODE_ENV",
     "PORT",
     "WEB_ORIGIN",
+    "API_ORIGIN",
     "NEXT_PUBLIC_API_URL",
     "DATABASE_URL",
     "JWT_ACCESS_SECRET",

@@ -1,5 +1,6 @@
 export * from "./auth-schema";
 export * from "./comment-schema";
+export * from "./event-schema";
 export * from "./friend-schema";
 export * from "./pagination-schema";
 export * from "./post-schema";

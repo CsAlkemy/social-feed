@@ -91,6 +91,17 @@ export class PostsController {
     return this.postsService.feed(user.id, query);
   }
 
+  @ApiOperation({ summary: "List posts you saved (cursor-paginated)" })
+  @ApiOkResponse({ schema: pageSchema(POST_SCHEMA) })
+  @UseGuards(JwtAuthGuard)
+  @Get("saved")
+  saved(
+    @CurrentUser() user: AuthUser,
+    @Query(new ZodValidationPipe(cursorQuerySchema)) query: CursorQuery,
+  ): Promise<Page<PostEntity>> {
+    return this.postsService.saved(user.id, query);
+  }
+
   @ApiOperation({ summary: "Create a post" })
   @ApiBody({ schema: zodToOpenApi(createPostSchema) })
   @ApiCreatedResponse({ schema: POST_SCHEMA })
@@ -186,6 +197,29 @@ export class PostsController {
     @Param("id") id: string,
   ): Promise<void> {
     return this.postsService.remove(user.id, id);
+  }
+
+  @ApiOperation({ summary: "Save a post for later" })
+  @ApiOkResponse({ schema: POST_SCHEMA })
+  @ApiNotFoundResponse({ description: "Post not found" })
+  @UseGuards(JwtAuthGuard)
+  @Put(":id/save")
+  save(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+  ): Promise<PostEntity> {
+    return this.postsService.save(user.id, id);
+  }
+
+  @ApiOperation({ summary: "Remove a post from your saved list" })
+  @ApiOkResponse({ schema: POST_SCHEMA })
+  @UseGuards(JwtAuthGuard)
+  @Delete(":id/save")
+  unsave(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+  ): Promise<PostEntity> {
+    return this.postsService.unsave(user.id, id);
   }
 
   @ApiOperation({ summary: "Add or change your reaction to a post" })

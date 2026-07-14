@@ -23,6 +23,11 @@ export function MembersView() {
     setTab("discover");
   }, [queryParam]);
 
+  const tabParam = typeof router.query.tab === "string" ? router.query.tab : "";
+  useEffect(() => {
+    if (tabParam === "discover") setTab("discover");
+  }, [tabParam]);
+
   const members = useMembers(debouncedSearch);
   const friends = useFriends();
   const requests = useFriendRequests("incoming");

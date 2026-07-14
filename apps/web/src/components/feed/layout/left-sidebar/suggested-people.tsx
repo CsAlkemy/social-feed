@@ -13,7 +13,7 @@ export function SuggestedPeople() {
     <Card className="p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Suggested People</h2>
-        <Link href="/members" className="text-sm font-medium text-primary">
+        <Link href="/members?tab=discover" className="text-sm font-medium text-primary">
           See All
         </Link>
       </div>

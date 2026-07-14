@@ -18,7 +18,6 @@ import {
   CommonDropdown,
   SearchInput,
   UserAvatar,
-  toast,
   type CommonDropdownItem,
 } from "@repo/ui";
 
@@ -27,30 +26,25 @@ import { useLogout } from "@/hooks/use-auth";
 interface NavIconButtonProps {
   label: string;
   icon: ReactNode;
-  badgeCount?: number;
+  disabled?: boolean;
   className?: string;
   onClick?: () => void;
 }
 
-function NavIconButton({ label, icon, badgeCount, className, onClick }: NavIconButtonProps) {
+function NavIconButton({ label, icon, disabled, className, onClick }: NavIconButtonProps) {
   return (
     <button
       type="button"
       aria-label={label}
-      onClick={onClick ?? (() => toast.info(`${label} is not connected yet`))}
+      disabled={disabled}
+      onClick={onClick}
       className={cn(
         "flex h-16 items-center px-2 text-muted-foreground transition-colors hover:text-primary sm:px-2.5",
+        "disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-muted-foreground",
         className,
       )}
     >
-      <span className="relative flex">
-        {icon}
-        {badgeCount === undefined ? null : (
-          <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-            {badgeCount}
-          </span>
-        )}
-      </span>
+      {icon}
     </button>
   );
 }
@@ -160,16 +154,8 @@ export function AppHeader({ user }: { user: User }) {
             icon={<UsersIcon className="size-5" />}
             active={isActive("/members")}
           />
-          <NavIconButton
-            label="Notifications"
-            icon={<BellIcon className="size-5" />}
-            badgeCount={6}
-          />
-          <NavIconButton
-            label="Messages"
-            icon={<MessageCircleIcon className="size-5" />}
-            badgeCount={2}
-          />
+          <NavIconButton label="Notifications" icon={<BellIcon className="size-5" />} disabled />
+          <NavIconButton label="Messages" icon={<MessageCircleIcon className="size-5" />} disabled />
         </nav>
 
         <CommonDropdown

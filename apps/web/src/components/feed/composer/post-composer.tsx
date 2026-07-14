@@ -2,8 +2,8 @@ import Image from "next/image";
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 import {
+  CalendarDaysIcon,
   ChevronDownIcon,
-  FileTextIcon,
   GlobeIcon,
   ImageIcon,
   LockIcon,
@@ -15,6 +15,7 @@ import {
 import { PostVisibility, type CreatePostInput, type User } from "@repo/library";
 import { Card, CommonButton, CommonDropdown, toast, UserAvatar } from "@repo/ui";
 
+import { CreateEventModal } from "@/components/events/create-event-modal";
 import { uploadPostImage } from "@/lib/upload";
 
 interface ComposerImage {
@@ -37,8 +38,6 @@ const VISIBILITY_OPTIONS = [
   },
 ] as const;
 
-const DISABLED_ATTACHMENTS = [{ label: "Article", icon: FileTextIcon }] as const;
-
 export function PostComposer({
   user,
   onCreate,
@@ -50,6 +49,7 @@ export function PostComposer({
   const [images, setImages] = useState<ComposerImage[]>([]);
   const [visibility, setVisibility] = useState<PostVisibility>(PostVisibility.PUBLIC);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fullName = `${user.firstName} ${user.lastName}`;
@@ -140,19 +140,15 @@ export function PostComposer({
               <ImageIcon className="size-4" />
               <span className="hidden sm:inline">Photo</span>
             </button>
-            {DISABLED_ATTACHMENTS.map(({ label, icon: Icon }) => (
-              <button
-                key={label}
-                type="button"
-                disabled
-                aria-label={`${label} (coming soon)`}
-                title={`${label} attachments are coming soon`}
-                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground/50"
-              >
-                <Icon className="size-4" />
-                <span className="hidden sm:inline">{label}</span>
-              </button>
-            ))}
+            <button
+              type="button"
+              aria-label="Create an event"
+              onClick={() => setIsEventModalOpen(true)}
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            >
+              <CalendarDaysIcon className="size-4" />
+              <span className="hidden sm:inline">Event</span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -197,6 +193,8 @@ export function PostComposer({
           tabIndex={-1}
         />
       </form>
+
+      <CreateEventModal open={isEventModalOpen} onOpenChange={setIsEventModalOpen} />
     </Card>
   );
 }

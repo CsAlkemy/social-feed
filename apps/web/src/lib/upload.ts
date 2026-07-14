@@ -41,3 +41,10 @@ export function uploadStoryImage(file: File): Promise<string> {
     handleUploadUrl: apiUrl("stories", "media/upload-url"),
   });
 }
+
+export function uploadEventImage(file: File): Promise<string> {
+  return uploadImage(file, {
+    pathPrefix: "event-media",
+    handleUploadUrl: apiUrl("events", "media/upload-url"),
+  });
+}

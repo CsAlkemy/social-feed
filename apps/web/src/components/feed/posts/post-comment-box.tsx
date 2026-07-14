@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 
+import { SendHorizontalIcon } from "lucide-react";
+
 import type { User } from "@repo/library";
 import { toast, UserAvatar } from "@repo/ui";
 
@@ -56,13 +58,21 @@ export function PostCommentBox({
           placeholder={placeholder}
           autoFocus={autoFocus}
           disabled={createComment.isPending}
-          className="h-10 w-full rounded-full bg-secondary pl-4 pr-12 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
+          className="h-10 w-full rounded-full bg-secondary pl-4 pr-20 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-60"
         />
-        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-muted-foreground">
+        <div className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-2 text-muted-foreground">
           <EmojiPicker
             onSelect={(emoji) => setContent((value) => value + emoji)}
             className="transition-colors hover:text-foreground"
           />
+          <button
+            type="submit"
+            aria-label="Send"
+            disabled={!content.trim() || createComment.isPending}
+            className="text-primary transition-colors hover:text-primary/80 disabled:text-muted-foreground"
+          >
+            <SendHorizontalIcon className="size-4.5" />
+          </button>
         </div>
       </div>
     </form>

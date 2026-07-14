@@ -1,4 +1,5 @@
 export * from "./comment";
+export * from "./event";
 export * from "./member";
 export * from "./page";
 export * from "./post";

@@ -22,7 +22,7 @@ import { PostActions } from "@/components/feed/posts/post-actions";
 import { PostComments } from "@/components/feed/posts/post-comments";
 import { PostCommentBox } from "@/components/feed/posts/post-comment-box";
 import { PostImageGrid } from "@/components/feed/posts/post-image-grid";
-import { useDeletePost } from "@/hooks/use-posts";
+import { useDeletePost, useToggleSavePost } from "@/hooks/use-posts";
 
 export function PostCard({
   post,
@@ -38,6 +38,7 @@ export function PostCard({
   const [showComments, setShowComments] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const deletePost = useDeletePost();
+  const toggleSave = useToggleSavePost();
 
   const authorName = `${post.author.firstName} ${post.author.lastName}`;
   const isAuthor = post.author.id === viewer.id;
@@ -48,13 +49,20 @@ export function PostCard({
       onError: (error) => toast.error(error.message || "Unable to delete post"),
     });
 
+  const handleToggleSave = () =>
+    toggleSave.mutate(post, {
+      onSuccess: (updated) =>
+        toast.success(updated.viewerSaved ? "Post saved" : "Removed from saved posts"),
+      onError: (error) => toast.error(error.message || "Unable to update saved posts"),
+    });
+
   const menuItems: CommonDropdownItem[] = [
-    { label: "Save Post", onSelect: () => toast.info("Save Post is not connected yet") },
     {
-      label: "Turn On Notification",
-      onSelect: () => toast.info("Turn On Notification is not connected yet"),
+      label: post.viewerSaved ? "Unsave Post" : "Save Post",
+      onSelect: handleToggleSave,
     },
-    { label: "Hide", onSelect: () => toast.info("Hide is not connected yet") },
+    { label: "Turn On Notification", disabled: true },
+    { label: "Hide", disabled: true },
     ...(isAuthor
       ? ([
           { label: "Edit Post", onSelect: () => setIsEditing(true) },

@@ -6,6 +6,7 @@ import { AppService } from "./app.service";
 import { AuthModule } from "./auth/auth.module";
 import { CommentsModule } from "./comments/comments.module";
 import { validateEnv } from "./config/env";
+import { EventsModule } from "./events/events.module";
 import { FriendsModule } from "./friends/friends.module";
 import { PostsModule } from "./posts/posts.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -20,6 +21,7 @@ import { UsersModule } from "./users/users.module";
     UsersModule,
     PostsModule,
     CommentsModule,
+    EventsModule,
     FriendsModule,
     StoriesModule,
   ],

@@ -20,6 +20,7 @@ import { applyReaction } from "@/hooks/apply-reaction";
 import { patchInfiniteItem, removeInfiniteItem } from "@/hooks/infinite-cache";
 
 export const feedKey = ["posts", "feed"] as const;
+export const savedPostsKey = ["posts", "saved"] as const;
 export const postKey = (postId: string) => ["post", postId] as const;
 
 export function usePost(postId: string) {
@@ -40,6 +41,45 @@ export function useFeed(limit = 10) {
       ),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
+}
+
+export function useSavedPosts(limit = 10) {
+  return useInfiniteQuery({
+    queryKey: savedPostsKey,
+    queryFn: ({ pageParam }) =>
+      apiRequest<Page<Post>>(
+        "get",
+        `${apiUrl("posts", "saved")}?limit=${limit}${pageParam ? `&cursor=${pageParam}` : ""}`,
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
+}
+
+export function useToggleSavePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation<Post, ApiError, Post>({
+    mutationFn: (post) =>
+      post.viewerSaved
+        ? apiRequest<Post>("delete", apiUrl("posts", `${post.id}/save`))
+        : apiRequest<Post>("put", apiUrl("posts", `${post.id}/save`)),
+    onSuccess: (updated) => {
+      const patch = (current: Post): Post => ({
+        ...current,
+        viewerSaved: updated.viewerSaved,
+      });
+      patchInfiniteItem<Post>(queryClient, feedKey, updated.id, patch);
+      queryClient.setQueryData<Post>(postKey(updated.id), (current) =>
+        current ? patch(current) : current,
+      );
+      if (updated.viewerSaved) {
+        void queryClient.invalidateQueries({ queryKey: savedPostsKey });
+      } else {
+        removeInfiniteItem<Post>(queryClient, savedPostsKey, updated.id);
+      }
+    },
   });
 }
 
@@ -82,7 +122,11 @@ export function useReactToPost() {
     Post,
     ApiError,
     { post: Post; reaction: ReactionType | null },
-    { previous?: InfiniteData<Page<Post>>; previousSingle?: Post }
+    {
+      previous?: InfiniteData<Page<Post>>;
+      previousSaved?: InfiniteData<Page<Post>>;
+      previousSingle?: Post;
+    }
   >({
     mutationFn: ({ post, reaction }) =>
       reaction
@@ -94,20 +138,29 @@ export function useReactToPost() {
       const single = postKey(post.id);
       await Promise.all([
         queryClient.cancelQueries({ queryKey: feedKey }),
+        queryClient.cancelQueries({ queryKey: savedPostsKey }),
         queryClient.cancelQueries({ queryKey: single }),
       ]);
       const previous = queryClient.getQueryData<InfiniteData<Page<Post>>>(feedKey);
+      const previousSaved =
+        queryClient.getQueryData<InfiniteData<Page<Post>>>(savedPostsKey);
       const previousSingle = queryClient.getQueryData<Post>(single);
       patchInfiniteItem<Post>(queryClient, feedKey, post.id, (current) =>
+        applyReaction(current, reaction),
+      );
+      patchInfiniteItem<Post>(queryClient, savedPostsKey, post.id, (current) =>
         applyReaction(current, reaction),
       );
       queryClient.setQueryData<Post>(single, (current) =>
         current ? applyReaction(current, reaction) : current,
       );
-      return { previous, previousSingle };
+      return { previous, previousSaved, previousSingle };
     },
     onError: (_error, { post }, context) => {
       if (context?.previous) queryClient.setQueryData(feedKey, context.previous);
+      if (context?.previousSaved) {
+        queryClient.setQueryData(savedPostsKey, context.previousSaved);
+      }
       if (context?.previousSingle) {
         queryClient.setQueryData(postKey(post.id), context.previousSingle);
       }
@@ -120,6 +173,7 @@ export function useReactToPost() {
         viewerReaction: updated.viewerReaction,
       });
       patchInfiniteItem<Post>(queryClient, feedKey, updated.id, patch);
+      patchInfiniteItem<Post>(queryClient, savedPostsKey, updated.id, patch);
       queryClient.setQueryData<Post>(postKey(updated.id), (current) =>
         current ? patch(current) : current,
       );
@@ -133,13 +187,16 @@ export function useUpdatePost() {
   return useMutation<Post, ApiError, { postId: string; input: UpdatePostInput }>({
     mutationFn: ({ postId, input }) =>
       apiRequest<Post>("patch", apiUrl("posts", postId), input),
-    onSuccess: (updated) =>
-      patchInfiniteItem<Post>(queryClient, feedKey, updated.id, (post) => ({
+    onSuccess: (updated) => {
+      const patch = (post: Post): Post => ({
         ...post,
         content: updated.content,
         imageUrls: updated.imageUrls,
         visibility: updated.visibility,
-      })),
+      });
+      patchInfiniteItem<Post>(queryClient, feedKey, updated.id, patch);
+      patchInfiniteItem<Post>(queryClient, savedPostsKey, updated.id, patch);
+    },
   });
 }
 
@@ -148,7 +205,9 @@ export function useDeletePost() {
 
   return useMutation<void, ApiError, string>({
     mutationFn: (postId) => apiRequest<void>("delete", apiUrl("posts", postId)),
-    onSuccess: (_data, postId) =>
-      removeInfiniteItem<Post>(queryClient, feedKey, postId),
+    onSuccess: (_data, postId) => {
+      removeInfiniteItem<Post>(queryClient, feedKey, postId);
+      removeInfiniteItem<Post>(queryClient, savedPostsKey, postId);
+    },
   });
 }

@@ -20,7 +20,11 @@ import { Prisma, type User } from "../generated/prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 type PostWithRelations = Prisma.PostGetPayload<{
-  include: { author: true; likes: { select: { id: true; type: true } } };
+  include: {
+    author: true;
+    likes: { select: { id: true; type: true } };
+    savedBy: { select: { id: true } };
+  };
 }>;
 
 type ReactionCounts = Partial<Record<ReactionType, number>>;
@@ -66,6 +70,48 @@ export class PostsService {
   }
 
   async findOne(userId: string, postId: string): Promise<PostEntity> {
+    return this.oneToEntity(await this.fetchVisible(userId, postId));
+  }
+
+  async saved(userId: string, query: CursorQuery): Promise<Page<PostEntity>> {
+    const take = query.limit + 1;
+    const rows = await this.prisma.savedPost.findMany({
+      where: {
+        userId,
+        post: {
+          OR: [{ visibility: PostVisibility.PUBLIC }, { authorId: userId }],
+        },
+      },
+      include: { post: { include: this.include(userId) } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take,
+      ...(query.cursor ? { cursor: { id: query.cursor }, skip: 1 } : {}),
+    });
+
+    const hasMore = rows.length > query.limit;
+    const items = hasMore ? rows.slice(0, query.limit) : rows;
+    const counts = await this.reactionCounts(items.map((row) => row.postId));
+
+    return {
+      items: items.map((row) =>
+        this.toPostEntity(row.post, counts.get(row.postId) ?? {}),
+      ),
+      nextCursor: hasMore ? items[items.length - 1]!.id : null,
+    };
+  }
+
+  async save(userId: string, postId: string): Promise<PostEntity> {
+    await this.getVisibleOrThrow(userId, postId);
+    await this.prisma.savedPost.upsert({
+      where: { userId_postId: { userId, postId } },
+      create: { userId, postId },
+      update: {},
+    });
+    return this.oneToEntity(await this.fetchVisible(userId, postId));
+  }
+
+  async unsave(userId: string, postId: string): Promise<PostEntity> {
+    await this.prisma.savedPost.deleteMany({ where: { userId, postId } });
     return this.oneToEntity(await this.fetchVisible(userId, postId));
   }
 
@@ -166,6 +212,7 @@ export class PostsService {
     return {
       author: true,
       likes: { where: { userId }, select: { id: true, type: true } },
+      savedBy: { where: { userId }, select: { id: true } },
     } satisfies Prisma.PostInclude;
   }
 
@@ -245,6 +292,7 @@ export class PostsService {
       likeCount: post.likeCount,
       reactionCounts,
       viewerReaction: (post.likes[0]?.type as ReactionType | undefined) ?? null,
+      viewerSaved: post.savedBy.length > 0,
       commentCount: post.commentCount,
       shareCount: post.shareCount,
       createdAt: post.createdAt.toISOString(),

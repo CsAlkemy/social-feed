@@ -86,6 +86,7 @@ export const POST_SCHEMA: ApiSchemaObject = {
     likeCount: { type: "integer", example: 3 },
     reactionCounts: REACTION_COUNTS_SCHEMA,
     viewerReaction: VIEWER_REACTION_SCHEMA,
+    viewerSaved: { type: "boolean", example: false },
     commentCount: { type: "integer", example: 0 },
     shareCount: { type: "integer", example: 0 },
     createdAt: {
@@ -152,6 +153,30 @@ export const STORY_VIEWER_SCHEMA: ApiSchemaObject = {
   properties: {
     user: USER_SCHEMA,
     viewedAt: {
+      type: "string",
+      format: "date-time",
+      example: "2026-07-11T17:46:15.110Z",
+    },
+  },
+};
+
+export const EVENT_SCHEMA: ApiSchemaObject = {
+  type: "object",
+  properties: {
+    id: { type: "string", example: "cmrgnooue0000of3240g0lxg3" },
+    title: { type: "string", example: "International Conference on Design" },
+    description: { type: "string", nullable: true, example: null },
+    location: { type: "string", nullable: true, example: "Dhaka" },
+    coverUrl: { type: "string", nullable: true, example: null },
+    startsAt: {
+      type: "string",
+      format: "date-time",
+      example: "2026-07-18T10:00:00.000Z",
+    },
+    creator: USER_SCHEMA,
+    goingCount: { type: "integer", example: 17 },
+    viewerGoing: { type: "boolean", example: false },
+    createdAt: {
       type: "string",
       format: "date-time",
       example: "2026-07-11T17:46:15.110Z",

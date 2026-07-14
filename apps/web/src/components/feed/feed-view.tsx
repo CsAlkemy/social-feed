@@ -2,7 +2,6 @@ import type { CreatePostInput, Post, ReactionType } from "@repo/library";
 import { Card, CommonButton, FeedSkeleton, Spinner } from "@repo/ui";
 
 import { PostComposer } from "@/components/feed/composer/post-composer";
-import { FEED_EVENTS } from "@/components/feed/feed-data";
 import { EventsCard } from "@/components/feed/layout/left-sidebar/events-card";
 import { ExploreMenu } from "@/components/feed/layout/left-sidebar/explore-menu";
 import { SuggestedPeople } from "@/components/feed/layout/left-sidebar/suggested-people";
@@ -38,7 +37,7 @@ export function FeedView() {
       <aside className="scrollbar-none hidden space-y-4 overflow-y-auto overscroll-contain py-6 lg:col-span-3 lg:block">
         <ExploreMenu />
         <SuggestedPeople />
-        <EventsCard events={FEED_EVENTS} />
+        <EventsCard />
       </aside>
 
       <section className="scrollbar-none col-span-12 space-y-4 overflow-y-auto overscroll-contain py-6 lg:col-span-9 xl:col-span-6">
